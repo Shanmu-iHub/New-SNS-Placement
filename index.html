@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNS IIPC — Placement Portal | SNS Institutions Coimbatore</title>
+    <meta name="description"
+        content="Explore comprehensive placement statistics and details for SNS College of Technology, SNS College of Engineering, and Dr.SNS Rajalakshmi College of Arts and Science Coimbatore.">
+    <link rel="icon" href="Logo .png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #F5F5F7;
+        }
+
+        #root {
+            min-height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+
+        const R = "#C41230", D = "#0B0E17", G = "#16213E";
+
+        // ═══════════════════════════════════════════════════
+        // GOOGLE SHEETS INTEGRATION CONFIG (No API Key needed)
+        // ═══════════════════════════════════════════════════
+        const SHEET_CONFIG = {
+            spreadsheetId: '1VqI_1aDSA6GTPKQAgUB8pMUph-_eDzODxDyfKQ0Glms',    // ← Paste your Spreadsheet ID here
+            cacheTime: 0, // Immediate update (no cache)
+            sheets: {
+                colleges: 'College_Master',
+                departments: 'Department_Mapping',
+                placementStats: 'Placement_Stats',
+                companyVisits: 'Company_Visits',
+                upcomingDrives: 'Upcoming_Drives',
+                salaryDistribution: 'Salary_Distribution',
+                certifications: 'Certifications',
+                trainingModules: 'Training_Modules',
+                trainingPlatforms: 'Training_Platforms',
+                facilities: 'Facilities',
+                placedStudents: 'Placed_Students',
+                highlights: 'Placement_Highlights',
+            }
+        };
+
+        const sheetsEnabled = () => !!SHEET_CONFIG.spreadsheetId;
+
+        // Custom lightweight CSV parser
+        const parseCSV = (text) => {
+            const rows = [];
+            let row = [];
+            let cell = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i], nc = text[i + 1];
+                if (c === '"' && inQuotes && nc === '"') { cell += '"'; i++; } // Escaped quote
+                else if (c === '"') inQuotes = !inQuotes; // Toggle quotes
+                else if (c === ',' && !inQuotes) { row.push(cell.trim()); cell = ''; } // End of cell
+                else if ((c === '\n' || c === '\r') && !inQuotes) {
+                    row.push(cell.trim());
+                    if (row.some(x => x)) rows.push(row); // End of row (skip empty)
+                    row = []; cell = '';
+                    if (c === '\r' && nc === '\n') i++; // Skip \n in \r\n
+                }
+                else cell += c;
+            }
+            if (cell || row.length) { row.push(cell.trim()); rows.push(row); }
+            return rows;
+        };
+
+        // Fetch data via public CSV export URL with localStorage caching
+        const fetchSheetData = async (sheetName) => {
+            const cacheKey = `sns_sheet_csv_${sheetName}`;
+            try {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                    const { data, timestamp } = JSON.parse(cached);
+                    if (Date.now() - timestamp < SHEET_CONFIG.cacheTime) return { data, fromCache: true };
+                }
+            } catch (e) { /* fallback to fetch */ }
+
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_CONFIG.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`Sheets fetch error: ${res.status}`);
+
+            const text = await res.text();
+            const rows = parseCSV(text);
+            if (rows.length < 2) return { data: [], fromCache: false };
+
+            // Convert rows to array of objects
+            const headers = rows[0].map(h => h.replace(/^"|"$/g, '')); // Strip quotes
+            const data = rows.slice(1).map(row => {
+                const obj = {};
+                headers.forEach((h, i) => {
+                    const val = row[i];
+                    obj[h] = val ? val.replace(/^"|"$/g, '') : '';
+                });
+                return obj;
+            });
+
+            try { localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() })); } catch (e) { }
+            return { data, fromCache: false };
+        };
+
+        // ═══════ PARSERS: Convert sheet rows → app data shapes ═══════
+
+        const parseColleges = (rows) => rows.filter(r => r.is_active !== 'FALSE').map(r => ({
+            id: r.college_id, name: r.college_name, short: r.short_name, code: r.code,
+            accr: r.accreditation, email: r.email, phone: r.phone, poc: r.poc, color: r.color_code || '#C41230'
+        }));
+
+        const parseDepartments = (rows) => {
+            const map = {};
+            rows.forEach(r => {
+                if (!map[r.college_id]) map[r.college_id] = ['All'];
+                map[r.college_id].push(r.department_name);
+            });
+            return map;
+        };
+
+        const parsePlacementStats = (rows) => {
+            const obj = {};
+            rows.forEach(r => {
+                if (!obj[r.college_id]) obj[r.college_id] = {};
+                obj[r.college_id][r.academic_year] = {
+                    h: r.highest_package, a: r.average_package, m: r.median_package,
+                    p: parseInt(r.students_placed) || 0, e: parseInt(r.students_eligible) || 0,
+                    r: parseInt(r.recruiters_count) || 0, o: parseInt(r.total_offers) || 0,
+                };
+            });
+            return obj;
+        };
+
+        const parseCompanyVisits = (rows) => rows.map(r => ({
+            co: r.company_name, dt: r.drive_date, pk: r.package_range, ro: r.roles,
+            cat: r.category, cl: r.college_code, st: r.status,
+            sp: r.students_placed ? parseInt(r.students_placed) : null, dept: r.department
+        }));
+
+        const parseUpcoming = (rows) => rows.map(r => ({
+            co: r.company_name, dt: r.drive_date, pk: r.package_range,
+            ro: r.roles, el: r.eligibility, cl: r.college_code
+        }));
+
+        const parseSalaryBands = (rows) => rows.map(r => ({
+            range: r.salary_band, snsct: parseInt(r.snsct_count) || 0,
+            snsce: parseInt(r.snsce_count) || 0, drsnsrcas: parseInt(r.drsnsrcas_count) || 0,
+            c: r.band_color || '#C41230'
+        }));
+
+        const parseCertifications = (rows) => {
+            const result = { it: [], core: [] };
+            rows.forEach(r => {
+                const entry = { n: r.certification_name, c: parseInt(r.student_count) || 0, cl: r.color_code || '#333' };
+                if (r.category === 'Core') result.core.push(entry);
+                else result.it.push(entry);
+            });
+            return result;
+        };
+
+        const parseTraining = (rows) => {
+            const obj = {};
+            rows.forEach(r => {
+                obj[r.module_id] = {
+                    t: r.module_title, p: r.partner_name, d: r.description,
+                    m: (r.syllabus_items || '').split(',').map(s => s.trim()).filter(Boolean)
+                };
+            });
+            return obj;
+        };
+
+        const parsePlatforms = (rows) => rows.map(r => ({ n: r.platform_name, u: r.usage_context }));
+
+        const parseFacilities = (rows) => rows.map(r => ({ i: r.icon, t: r.title, d: r.description }));
+
+        const parsePlacedStudents = (rows) => rows.map(r => {
+            let photoUrl = r.photo ? r.photo.trim() : "";
+            const driveMatch = photoUrl.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (driveMatch && driveMatch[1]) {
+                photoUrl = `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w400-h400`;
+            } else if (photoUrl.includes('drive.google.com/open?id=')) {
+                try {
+                    const id = new URL(photoUrl).searchParams.get('id');
+                    if (id) photoUrl = `https://drive.google.com/thumbnail?id=${id}&sz=w400-h400`;
+                } catch (e) { }
+            }
+            return {
+                n: r.student_name, photo: photoUrl, co: r.company, r: r.role, c: r.college_short,
+                dept: r.department, ctc: r.ctc, li: r.linkedin, gh: r.github, lc: r.leetcode,
+                yop: r.yop
+            };
+        });
+
+        const parseHighlights = (rows) => rows.map(r => ({
+            n: r.student_count, co: r.company, r: r.package_info,
+            c: r.college, icon: r.icon, dept: r.department
+        }));
+
+        // ═══════ DEFAULT (FALLBACK) DATA — used when Sheets is not configured or offline ═══════
+
+        const COLLEGES = [
+            { id: "snsct", name: "SNS College of Technology", short: "SNSCT", code: "2726", accr: "NAAC A++ | Autonomous", email: "it.iipc@snsgroups.com", phone: "9629937863", poc: "Mr. P. Saravanan", color: "#C41230" },
+            { id: "snsce", name: "SNS College of Engineering", short: "SNSCE", code: "SNSCE", accr: "NAAC A++ | Autonomous", email: "placement@snsce.ac.in", phone: "", poc: "IIPC SNSCE", color: "#E63946" },
+            { id: "drsnsrcas", name: "Dr.SNS Rajalakshmi College of Arts & Science", short: "Dr.SNSRCAS", code: "326", accr: "Autonomous", email: "arts.iipc@snsgroups.com", phone: "9994830099", poc: "IIPC Dr.SNSRCAS", color: "#F4845F" },
+        ];
+
+        const DEPTS = {
+            snsct: ["All", "CSE", "IT", "AI & Data Science", "AI & ML", "ECE", "EEE", "Mech", "Civil", "Aero", "Mechatronics", "Bio-Medical", "Food Tech", "MBA", "MCA"],
+            snsce: ["All", "CSE", "IT", "ECE", "EEE", "Mech", "Civil"],
+            drsnsrcas: ["All", "BCA", "B.Sc CS", "B.Sc AI&DS", "B.Sc Full Stack", "B.Sc Cyber Security", "BBA", "B.Com", "B.Com CA", "MBA", "MCA", "M.Sc CS"],
+        };
+
+        const YEARS = ["2024-25", "2023-24", "2022-23", "2021-22", "2020-21"];
+
+        const YS = {
+            snsct: { "2024-25": { h: "21 LPA", a: "4.5 LPA", m: "3.6 LPA", p: 1645, e: 1713, r: 454, o: 2100 }, "2023-24": { h: "19 LPA", a: "4.2 LPA", m: "3.5 LPA", p: 1008, e: 1080, r: 244, o: 1300 }, "2022-23": { h: "13.5 LPA", a: "4 LPA", m: "3.2 LPA", p: 900, e: 1000, r: 200, o: 1100 }, "2021-22": { h: "12 LPA", a: "3.8 LPA", m: "3 LPA", p: 820, e: 950, r: 180, o: 950 }, "2020-21": { h: "10 LPA", a: "3.5 LPA", m: "2.8 LPA", p: 750, e: 900, r: 160, o: 850 } },
+            snsce: { "2024-25": { h: "21 LPA", a: "5 LPA", m: "7.8 LPA", p: 800, e: 900, r: 165, o: 1000 }, "2023-24": { h: "13.5 LPA", a: "4.5 LPA", m: "4 LPA", p: 650, e: 750, r: 140, o: 800 }, "2022-23": { h: "10 LPA", a: "4 LPA", m: "3.5 LPA", p: 550, e: 650, r: 120, o: 680 }, "2021-22": { h: "8 LPA", a: "3.6 LPA", m: "3 LPA", p: 480, e: 580, r: 100, o: 560 }, "2020-21": { h: "7 LPA", a: "3.2 LPA", m: "2.8 LPA", p: 400, e: 520, r: 85, o: 470 } },
+            drsnsrcas: { "2024-25": { h: "9 LPA", a: "3.5 LPA", m: "3 LPA", p: 500, e: 600, r: 100, o: 600 }, "2023-24": { h: "7 LPA", a: "3 LPA", m: "2.8 LPA", p: 420, e: 520, r: 80, o: 500 }, "2022-23": { h: "6 LPA", a: "2.8 LPA", m: "2.5 LPA", p: 350, e: 450, r: 65, o: 420 }, "2021-22": { h: "5 LPA", a: "2.5 LPA", m: "2.2 LPA", p: 300, e: 400, r: 55, o: 350 }, "2020-21": { h: "4.5 LPA", a: "2.3 LPA", m: "2 LPA", p: 250, e: 360, r: 45, o: 290 } },
+        };
+
+        const SB = [
+            { range: "₹20L+", snsct: 3, snsce: 2, drsnsrcas: 0, c: "#C41230" }, { range: "₹15-20L", snsct: 5, snsce: 3, drsnsrcas: 0, c: "#E63946" },
+            { range: "₹10-15L", snsct: 25, snsce: 15, drsnsrcas: 2, c: "#F4845F" }, { range: "₹7-10L", snsct: 80, snsce: 50, drsnsrcas: 10, c: "#F7B267" },
+            { range: "₹5-7L", snsct: 200, snsce: 120, drsnsrcas: 40, c: "#7FB069" }, { range: "₹3-5L", snsct: 800, snsce: 400, drsnsrcas: 300, c: "#4ECDC4" },
+            { range: "₹2-3L", snsct: 500, snsce: 200, drsnsrcas: 150, c: "#45B7D1" },
+        ];
+
+        const CATS = ["IT Product", "IT Services", "Core Engineering", "Sales & Marketing", "Analytics & Data", "Management & Consulting"];
+
+        const CV = [
+            { co: "Juspay Technologies", dt: "Apr 2025", pk: "₹10-21 LPA", ro: "SDE, Backend", cat: "IT Product", cl: "snsce", st: "In Progress", sp: null, dept: "CSE" },
+            { co: "C.R.I. Pumps Pvt Ltd", dt: "16 Apr 2025", pk: "₹3-4.5 LPA", ro: "GET", cat: "Core Engineering", cl: "snsce", st: "Completed", sp: 56, dept: "Mech" },
+            { co: "L.G. Balakrishnan & Bros", dt: "16 Apr 2025", pk: "₹3-4 LPA", ro: "Engineer Trainee", cat: "Core Engineering", cl: "snsce", st: "Completed", sp: 21, dept: "Mech" },
+            { co: "Hue Technology / Wise Work", dt: "07 Apr 2025", pk: "IT", ro: "Software Developer", cat: "IT Services", cl: "snsce", st: "Completed", sp: 9, dept: "CSE" },
+            { co: "Launched", dt: "29 Mar 2025", pk: "IT", ro: "Full Stack Developer", cat: "IT Product", cl: "snsce", st: "Completed", sp: 23, dept: "IT" },
+            { co: "Accenture", dt: "2024-25", pk: "₹4-7 LPA", ro: "ASE, Analyst", cat: "IT Services", cl: "all", st: "Completed", sp: 46, dept: "Multiple" },
+            { co: "Cognizant (CTS)", dt: "2024-25", pk: "₹4-6 LPA", ro: "Programmer Analyst", cat: "IT Services", cl: "all", st: "Completed", sp: 37, dept: "Multiple" },
+            { co: "Intellipaat", dt: "2024-25", pk: "₹9 LPA", ro: "SDE, Trainer", cat: "IT Services", cl: "snsct", st: "Completed", sp: 8, dept: "CSE" },
+            { co: "Deloitte", dt: "2024-25", pk: "₹7-12 LPA", ro: "Analyst, Consultant", cat: "Management & Consulting", cl: "snsct", st: "Off Campus", sp: null, dept: "CSE" },
+            { co: "HCL Tech", dt: "2024-25", pk: "₹4-6 LPA", ro: "Software Engineer", cat: "IT Services", cl: "snsct", st: "On Campus", sp: null, dept: "IT" },
+            { co: "LTIMindtree", dt: "2024-25", pk: "₹4.5 LPA", ro: "Software Engineer", cat: "IT Services", cl: "snsct", st: "Off Campus", sp: null, dept: "CSE" },
+            { co: "ServiceNow", dt: "2023-24", pk: "₹32 LPA", ro: "SDE", cat: "IT Product", cl: "snsct", st: "Completed", sp: 1, dept: "CSE" },
+            { co: "Cadence Design", dt: "2023-24", pk: "₹15 LPA", ro: "VLSI Engineer", cat: "Core Engineering", cl: "snsct", st: "Completed", sp: 2, dept: "ECE" },
+            { co: "Sobha Constructions", dt: "25 Jul 2024", pk: "₹13.5 LPA", ro: "GET", cat: "Core Engineering", cl: "snsct", st: "Completed", sp: 3, dept: "Civil" },
+            { co: "Zoho", dt: "2024-25", pk: "₹10-14 LPA", ro: "SDE, Member Technical", cat: "IT Product", cl: "snsct", st: "Completed", sp: 5, dept: "CSE" },
+            { co: "Amazon", dt: "2024-25", pk: "₹8-15 LPA", ro: "SDE", cat: "IT Product", cl: "snsct", st: "Completed", sp: 2, dept: "CSE" },
+            { co: "PayPal", dt: "2024-25", pk: "₹8-12 LPA", ro: "SDE", cat: "IT Product", cl: "snsct", st: "Completed", sp: 1, dept: "CSE" },
+            { co: "TCS", dt: "2024-25", pk: "₹3.6-7 LPA", ro: "ASE, Sys Engineer", cat: "IT Services", cl: "all", st: "Completed", sp: 120, dept: "Multiple" },
+            { co: "Wipro", dt: "2024-25", pk: "₹3.5-6 LPA", ro: "Project Engineer", cat: "IT Services", cl: "all", st: "Completed", sp: 90, dept: "Multiple" },
+            { co: "Infosys", dt: "2024-25", pk: "₹3.6-5 LPA", ro: "Sys Engineer", cat: "IT Services", cl: "all", st: "Completed", sp: 80, dept: "Multiple" },
+            { co: "IBM", dt: "2024-25", pk: "₹4-8 LPA", ro: "App Developer", cat: "IT Services", cl: "all", st: "Completed", sp: 15, dept: "CSE" },
+            { co: "Capgemini", dt: "2024-25", pk: "₹4-6 LPA", ro: "Analyst", cat: "IT Services", cl: "all", st: "Completed", sp: 30, dept: "Multiple" },
+            { co: "Hirotec", dt: "2024-25", pk: "₹3.5 LPA", ro: "Engineer", cat: "Core Engineering", cl: "all", st: "Completed", sp: 4, dept: "Mech" },
+            { co: "Rupeek", dt: "2024-25", pk: "₹4 LPA", ro: "Business Analyst", cat: "Sales & Marketing", cl: "all", st: "Completed", sp: 15, dept: "MBA" },
+            { co: "MRF", dt: "01 Mar 2025", pk: "₹3.5-5 LPA", ro: "GET Mechanical", cat: "Core Engineering", cl: "snsce", st: "Completed", sp: 2, dept: "Mech" },
+            { co: "KAAR Technologies", dt: "2024-25", pk: "₹6-9 LPA", ro: "SAP Consultant", cat: "IT Services", cl: "snsct", st: "Completed", sp: 6, dept: "CSE" },
+            { co: "ClaySys Technologies", dt: "03 Jul 2024", pk: "₹1.92-4.2 LPA", ro: "Intern → FTE", cat: "IT Services", cl: "snsct", st: "Completed", sp: 3, dept: "CSE" },
+            { co: "Tech Mahindra", dt: "2024-25", pk: "₹3.5-5 LPA", ro: "Software Engineer", cat: "IT Services", cl: "all", st: "Completed", sp: 25, dept: "Multiple" },
+            { co: "TAFE", dt: "2024-25", pk: "₹3-4.5 LPA", ro: "GET", cat: "Core Engineering", cl: "snsct", st: "Completed", sp: 10, dept: "Mech" },
+            { co: "TNS India Foundation", dt: "2024-25", pk: "₹3-4 LPA", ro: "Analyst", cat: "Analytics & Data", cl: "drsnsrcas", st: "Scheduled", sp: null, dept: "BCA" },
+            { co: "CavinKare", dt: "2024-25", pk: "₹3-4.5 LPA", ro: "Sales, Analyst", cat: "Sales & Marketing", cl: "drsnsrcas", st: "Scheduled", sp: null, dept: "BBA" },
+            { co: "Codingmart", dt: "2024-25", pk: "₹4-6 LPA", ro: "Full Stack Dev", cat: "IT Product", cl: "drsnsrcas", st: "Scheduled", sp: null, dept: "BCA" },
+            { co: "Shloklabs", dt: "2024-25", pk: "₹3.5-5 LPA", ro: "Software Dev", cat: "IT Product", cl: "drsnsrcas", st: "Scheduled", sp: null, dept: "B.Sc CS" },
+            { co: "Stahllform Technik", dt: "12 Mar 2025", pk: "₹3-4 LPA", ro: "Engineer", cat: "Core Engineering", cl: "snsce", st: "Completed", sp: 8, dept: "Mech" },
+            { co: "Pinnacle Infotech", dt: "28 Feb 2025", pk: "IT", ro: "Software Dev", cat: "IT Services", cl: "snsce", st: "Completed", sp: 5, dept: "CSE" },
+            { co: "Flowserve", dt: "2024-25", pk: "₹3.5-5 LPA", ro: "Engineer", cat: "Core Engineering", cl: "snsce", st: "On Campus", sp: null, dept: "Mech" },
+            { co: "Meesho (Intern)", dt: "2024-25", pk: "Stipend", ro: "Data Analyst, SDE, DevOps Intern", cat: "IT Product", cl: "all", st: "Internship", sp: null, dept: "Multiple" },
+        ];
+
+        const UPCOMING = [
+            { co: "Juspay Technologies", dt: "Apr 2025", pk: "₹10-21 LPA", ro: "SDE, Backend", el: "CSE/IT — 7+ CGPA", cl: "snsce" },
+            { co: "Policy Bazaar", dt: "Upcoming", pk: "₹4-6 LPA", ro: "Analyst, SDE", el: "CSE/IT/ECE — 6.5+", cl: "snsct" },
+            { co: "Hyperface", dt: "Upcoming", pk: "₹6-10 LPA", ro: "SDE", el: "CSE/IT — 7+", cl: "snsct" },
+            { co: "BlogVault", dt: "Upcoming", pk: "₹5-8 LPA", ro: "SDE, QA", el: "CSE/IT — 6.5+", cl: "snsct" },
+            { co: "Movate", dt: "Upcoming", pk: "₹3.5-5 LPA", ro: "Tech Support, SDE", el: "All branches — 6+", cl: "snsct" },
+            { co: "C5i Analytics", dt: "Upcoming", pk: "₹5-7 LPA", ro: "Data Analyst", el: "CSE/IT/AI&DS — 7+", cl: "snsct" },
+            { co: "TNS India Foundation", dt: "Upcoming", pk: "₹3-4 LPA", ro: "Analyst", el: "BCA/B.Sc — 6+", cl: "drsnsrcas" },
+            { co: "CavinKare", dt: "Upcoming", pk: "₹3-4.5 LPA", ro: "Sales, Analyst", el: "BBA/B.Com/MBA — 6+", cl: "drsnsrcas" },
+        ];
+
+        const TR = {
+            aptitude: { t: "Aptitude & Reasoning", p: "FACE + PrepInsta", d: "Quantitative, logical reasoning, verbal ability. Mocks with analytics. THINK ALGO for 1st years (1500+/yr).", m: ["Quantitative Aptitude", "Logical Reasoning", "Verbal Ability", "Data Interpretation", "Mock Tests", "GD & PI Prep", "Resume & Interview Labs"] },
+            coding: { t: "Coding / DSA / System Design", p: "LeetCode + Exercism + ByteXL", d: "DS & Algorithms, System Design, OS, DBMS, CN, MERN Stack, OOP. Timed contests & code reviews.", m: ["DSA (Arrays → Graphs → DP)", "System Design", "OS & DBMS", "Computer Networks", "MERN Full Stack", "Java / Python / C++", "Git & DevOps", "OOP Concepts"] },
+            ai: { t: "AI / ML / GenAI / Agentic AI", p: "Analytics Vidhya + SNS iHub", d: "GenAI & Agentic AI — 6500+ students trained. Certification prep across AI/ML/DS domains.", m: ["Machine Learning", "Deep Learning", "Generative AI & LLMs", "Agentic AI & Agents", "Data Science & Viz", "NLP & Computer Vision", "MLOps", "Prompt Engineering"] },
+            sales: { t: "Sales & Marketing / Soft Skills", p: "In-house + Industry Experts", d: "Corporate communication, business dev, digital marketing for MBA/BBA/B.Com.", m: ["Business Communication", "Sales & Negotiation", "Digital Marketing", "CRM & Lead Mgmt", "Presentation Skills", "Corporate Etiquette"] },
+        };
+
+        const PL = [{ n: "PrepInsta", u: "Aptitude & Reasoning" }, { n: "Analytics Vidhya", u: "AI/ML/DS Courses" }, { n: "ByteXL", u: "Coding Assessments" }, { n: "LeetCode", u: "DSA & Competitive" }, { n: "Exercism", u: "Language Tracks" }, { n: "FACE", u: "Official Training Partner" }, { n: "HackerRank", u: "Assessments & Certs" }, { n: "Coursera / NPTEL", u: "Academic Certs" }];
+
+        const CERTS = {
+            it: [{ n: "Microsoft", c: 2812, cl: "#00A4EF" }, { n: "Databricks", c: 1374, cl: "#FF3621" }, { n: "AWS", c: 627, cl: "#FF9900" }, { n: "Snowflake", c: 90, cl: "#29B5E8" }, { n: "Salesforce", c: 75, cl: "#00A1E0" }, { n: "NVIDIA", c: 64, cl: "#76B900" }, { n: "Oracle", c: 59, cl: "#F80000" }, { n: "Google", c: 14, cl: "#4285F4" }, { n: "ServiceNow", c: 11, cl: "#81B5A1" }],
+            core: [{ n: "CATIA", c: 75, cl: "#005386" }, { n: "FOSTAC", c: 54, cl: "#E67E22" }, { n: "HACCP", c: 43, cl: "#27AE60" }, { n: "BIM", c: 35, cl: "#8E44AD" }, { n: "CAD Design", c: 23, cl: "#2C3E50" }],
+        };
+
+        const FAC = [{ i: "🖥️", t: "600 Computers", d: "Dedicated lab for online tests" }, { i: "🏛️", t: "800-Seat Auditorium", d: "Pre-Placement Talks" }, { i: "📝", t: "1000-Seat Written Test", d: "Single-sitting exam capacity" }, { i: "⚡", t: "4000 Tests/Day", d: "Peak daily capacity" }, { i: "🌐", t: "1 Gbps Internet", d: "Airtel 500M + Jio 500M" }, { i: "🎤", t: "PPT Infra", d: "LCD, PCs, technicians" }, { i: "🚪", t: "Dedicated Rooms", d: "Separate for test, GD, interview" }, { i: "🤖", t: "Bot Lab (RPA)", d: "Automation Anywhere CoE" }, { i: "🔬", t: "iTech Labs", d: "R&D innovation space" }, { i: "💡", t: "IBI Liquid Studio", d: "Hackathon prototype showcase" }, { i: "🔧", t: "Piston Factory", d: "Project & fabrication lounge" }];
+
+        const App = () => {
+            const [pg, setPg] = useState("home");
+            const [col, setCol] = useState("all");
+            const [yr, setYr] = useState("2024-25");
+            const [dept, setDept] = useState("All");
+            const [catF, setCatF] = useState("all");
+            const [search, setSearch] = useState("");
+            const [tIdx, setTIdx] = useState(0);
+
+            // ═══ Dynamic Data State (initialized with hardcoded defaults) ═══
+            const [colleges, setColleges] = useState(COLLEGES);
+            const [deptMap, setDeptMap] = useState(DEPTS);
+            const [yearlyStats, setYearlyStats] = useState(YS);
+            const [companyVisits, setCompanyVisits] = useState(CV);
+            const [upcoming, setUpcoming] = useState(UPCOMING);
+            const [salaryBands, setSalaryBands] = useState(SB);
+            const [certData, setCertData] = useState(CERTS);
+            const [trainingData, setTrainingData] = useState(TR);
+            const [platformData, setPlatformData] = useState(PL);
+            const [facilityData, setFacilityData] = useState(FAC);
+            const [placedData, setPlacedData] = useState([{ n: "Vipin", co: "Dhvani R&D", r: "R&D Engineer", c: "SNSCT" }, { n: "46 Students", co: "Accenture", r: "₹4-7 LPA", c: "All SNS" }, { n: "37 Students", co: "Cognizant", r: "₹4-6 LPA", c: "All SNS" }, { n: "8 Students", co: "Intellipaat", r: "₹9 LPA", c: "SNSCT+SNSCE" }, { n: "56 Students", co: "C.R.I. Pumps", r: "Core Eng", c: "SNSCE" }, { n: "21 Students", co: "L.G.Balakrishnan", r: "Core Eng", c: "SNSCE" }, { n: "15 MBA Students", co: "Rupeek", r: "₹4 LPA", c: "All SNS" }, { n: "120 Students", co: "TCS", r: "₹3.6-7 LPA", c: "All SNS" }]);
+            const [highlightData, setHighlightData] = useState(null);
+
+            // ═══ Sync Status ═══
+            const [syncStatus, setSyncStatus] = useState({ loading: false, lastSync: null, error: null, source: 'defaults' });
+
+            // Fetch all data from Google Sheets
+            const loadFromSheets = useCallback(async () => {
+                if (!sheetsEnabled()) return;
+                setSyncStatus(prev => ({ ...prev, loading: true, error: null }));
+                try {
+                    const results = await Promise.allSettled([
+                        fetchSheetData(SHEET_CONFIG.sheets.colleges),
+                        fetchSheetData(SHEET_CONFIG.sheets.departments),
+                        fetchSheetData(SHEET_CONFIG.sheets.placementStats),
+                        fetchSheetData(SHEET_CONFIG.sheets.companyVisits),
+                        fetchSheetData(SHEET_CONFIG.sheets.upcomingDrives),
+                        fetchSheetData(SHEET_CONFIG.sheets.salaryDistribution),
+                        fetchSheetData(SHEET_CONFIG.sheets.certifications),
+                        fetchSheetData(SHEET_CONFIG.sheets.trainingModules),
+                        fetchSheetData(SHEET_CONFIG.sheets.trainingPlatforms),
+                        fetchSheetData(SHEET_CONFIG.sheets.facilities),
+                        fetchSheetData(SHEET_CONFIG.sheets.placedStudents),
+                        fetchSheetData(SHEET_CONFIG.sheets.highlights),
+                    ]);
+
+                    const get = (i) => results[i].status === 'fulfilled' && results[i].value.data.length > 0 ? results[i].value.data : null;
+
+                    if (get(0)) setColleges(parseColleges(get(0)));
+                    if (get(1)) setDeptMap(parseDepartments(get(1)));
+                    if (get(2)) setYearlyStats(parsePlacementStats(get(2)));
+                    if (get(3)) setCompanyVisits(parseCompanyVisits(get(3)));
+                    if (get(4)) setUpcoming(parseUpcoming(get(4)));
+                    if (get(5)) setSalaryBands(parseSalaryBands(get(5)));
+                    if (get(6)) setCertData(parseCertifications(get(6)));
+                    if (get(7)) setTrainingData(parseTraining(get(7)));
+                    if (get(8)) setPlatformData(parsePlatforms(get(8)));
+                    if (get(9)) setFacilityData(parseFacilities(get(9)));
+                    if (get(10)) setPlacedData(parsePlacedStudents(get(10)));
+                    if (get(11)) setHighlightData(parseHighlights(get(11)));
+
+                    const anyFromCache = results.some(r => r.status === 'fulfilled' && r.value.fromCache);
+                    setSyncStatus({ loading: false, lastSync: new Date(), error: null, source: anyFromCache ? 'cache' : 'live' });
+                } catch (err) {
+                    console.error('Sheets fetch error:', err);
+                    setSyncStatus(prev => ({ ...prev, loading: false, error: err.message, source: 'defaults' }));
+                }
+            }, []);
+
+            // Initial load from Sheets + auto-refresh interval
+            useEffect(() => {
+                loadFromSheets();
+                if (sheetsEnabled() && SHEET_CONFIG.cacheTime > 0) {
+                    const interval = setInterval(loadFromSheets, SHEET_CONFIG.cacheTime);
+                    return () => clearInterval(interval);
+                }
+            }, [loadFromSheets]);
+
+            useEffect(() => { const t = setInterval(() => setTIdx(p => (p + 1) % 8), 4500); return () => clearInterval(t) }, []);
+            useEffect(() => { setDept("All") }, [col]);
+
+            // ═══ Computed values using dynamic state ═══
+            const depts = col === "all" ? ["All"] : deptMap[col] || ["All"];
+            const gs = useCallback(() => {
+                if (col === "all") { const tp = Object.keys(yearlyStats).reduce((a, k) => a + (yearlyStats[k][yr]?.p || 0), 0); const te = Object.keys(yearlyStats).reduce((a, k) => a + (yearlyStats[k][yr]?.e || 0), 0); const to = Object.keys(yearlyStats).reduce((a, k) => a + (yearlyStats[k][yr]?.o || 0), 0); return { p: tp, e: te, o: to, r: "555+", h: "₹53 LPA", a: "₹4.5 LPA", m: "₹7.8 LPA" }; }
+                const s = yearlyStats[col]?.[yr]; return s ? { p: s.p, e: s.e, o: s.o, r: s.r + "", h: s.h, a: s.a, m: s.m } : { p: 0, e: 1, o: 0, r: "0", h: "-", a: "-", m: "-" };
+            }, [col, yr, yearlyStats]);
+            const stats = gs(); const rate = Math.round((stats.p / stats.e) * 100);
+
+            const fv = companyVisits.filter(v => (col === "all" || v.cl === col || v.cl === "all") && (catF === "all" || v.cat === catF) && (dept === "All" || v.dept === dept || v.dept === "Multiple") && (search === "" || v.co.toLowerCase().includes(search.toLowerCase())));
+
+            const navItems = [{ id: "home", icon: "🏠", l: "Home" }, { id: "dashboard", icon: "📊", l: "Dashboard" }, { id: "colleges", icon: "🏫", l: "Colleges & Depts" }, { id: "drives", icon: "🏢", l: "Company Drives" }, { id: "salary", icon: "💰", l: "Salary Analysis" }, { id: "students", icon: "🎓", l: "Placed Students" }, { id: "training", icon: "📚", l: "Training" }, { id: "upcoming", icon: "📅", l: "Upcoming" }, { id: "facilities", icon: "🏗️", l: "Facilities" }];
+            const Badge = ({ children, bg, fg }) => <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 100, fontSize: 10, fontWeight: 600, background: bg, color: fg }}>{children}</span>;
+            const StatBox = ({ v, l, c: clr = R }) => <div className="sbox"><div style={{ fontSize: 26, fontWeight: 800, color: clr, fontFamily: "'Space Mono',monospace", letterSpacing: "-0.5px" }}>{v}</div><div style={{ fontSize: 9, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 2 }}>{l}</div></div>;
+
+            // Sync status indicator component
+            const SyncBadge = () => sheetsEnabled() ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 8, background: syncStatus.error ? "rgba(255,60,60,.08)" : syncStatus.source === 'live' ? "rgba(78,205,196,.08)" : "rgba(247,178,103,.08)", border: `1px solid ${syncStatus.error ? "rgba(255,60,60,.15)" : syncStatus.source === 'live' ? "rgba(78,205,196,.15)" : "rgba(247,178,103,.15)"}`, cursor: "pointer", fontSize: 10 }} onClick={loadFromSheets} title="Click to refresh data">
+                    {syncStatus.loading ? <span style={{ animation: "pulse 1s infinite" }}>⟳</span> : syncStatus.error ? <span style={{ color: "#FF3C3C" }}>⚠</span> : <span style={{ color: "#4ECDC4" }}>●</span>}
+                    <span style={{ color: syncStatus.error ? "#FF3C3C" : "#999" }}>
+                        {syncStatus.loading ? "Syncing..." : syncStatus.error ? "Sync Error" : syncStatus.lastSync ? `Synced ${syncStatus.lastSync.toLocaleTimeString()}` : "Live Data"}
+                    </span>
+                </div>
+            ) : null;
+
+            const placed = placedData.filter(s => {
+                const matchC = col === "all" || !s.c || s.c.toLowerCase().includes("all sns") || s.c.toLowerCase() === colleges.find(c => c.id === col)?.short.toLowerCase() || s.c.toLowerCase() === col;
+                const matchD = dept === "All" || !s.dept || s.dept.toLowerCase() === "multiple" || s.dept.toLowerCase() === dept.toLowerCase();
+                const matchY = yr === "All" || !s.yop || yr.includes(s.yop.toString().slice(-2)) || s.yop.toString() === yr;
+                return matchC && matchD && matchY;
+            });
+
+            return (
+                <div style={{ fontFamily: "'Outfit',sans-serif", background: "#F5F5F7", color: "#1a1a1a", minHeight: "100vh" }}>
+                    <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${R};border-radius:2px}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        .card{background:white;border-radius:14px;border:1px solid #e8e8e8;transition:all .25s}.card:hover{box-shadow:0 8px 30px rgba(0,0,0,.06)}
+        .sbox{background:white;border-radius:12px;padding:18px;text-align:center;border:1px solid #eee;transition:all .2s}.sbox:hover{border-color:${R}30}
+        .pill{padding:6px 14px;border-radius:100px;border:1px solid #ddd;background:white;cursor:pointer;font-size:12px;font-weight:500;font-family:'Outfit';transition:all .2s}
+        .pill.on{background:${R};color:white;border-color:${R}}.pill:hover:not(.on){border-color:${R};color:${R}}
+        .tbl{width:100%;border-collapse:separate;border-spacing:0}.tbl th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid #eee;background:#FAFAFA;position:sticky;top:0}
+        .tbl td{padding:10px 14px;font-size:13px;border-bottom:1px solid #f0f0f0}.tbl tr:hover td{background:#FAFBFC}
+        .nav-i{padding:10px 16px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;transition:all .2s;border:none;background:none;width:100%;text-align:left;font-family:'Outfit';color:#555}
+        .nav-i:hover{background:#f0f0f0}.nav-i.on{background:${R}0D;color:${R};font-weight:600}
+        .glass{background:rgba(255,255,255,.06);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08)}
+        .bar{height:24px;border-radius:4px;transition:width 1s ease}
+        .hlift{transition:all .3s}.hlift:hover{transform:translateY(-5px);box-shadow:0 12px 40px rgba(0,0,0,.1)}
+        .srch{width:100%;padding:10px 14px;border-radius:10px;border:1px solid #e0e0e0;font-size:13px;font-family:'Outfit';outline:none}.srch:focus{border-color:${R}}
+        @media(max-width:900px){.sb{display:none!important}.ma{margin-left:0!important}}
+        @keyframes bounce-in { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+        .fab-btn { position: relative; display: flex; align-items: center; justify-content: flex-start; width: 50px; height: 50px; border-radius: 50px; color: white; font-size: 22px; text-decoration: none; box-shadow: 0 4px 14px rgba(0,0,0,0.25); transition: width 0.3s ease, border-radius 0.3s; z-index: 1000; overflow: hidden; }
+        .fab-btn i { display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; flex-shrink: 0; }
+        .fab-btn span { white-space: nowrap; font-size: 14px; font-weight: 600; font-family: 'Outfit'; opacity: 0; transition: opacity 0.2s ease; line-height: 50px; }
+        .fab-btn:hover { width: 140px; }
+        .fab-btn:hover span { opacity: 1; padding-right: 15px; }
+      `}</style>
+
+                    {/* Floating Action Buttons */}
+                    <div style={{ position: "fixed", bottom: 30, right: 30, display: "flex", flexDirection: "column", gap: 16, zIndex: 1000 }}>
+                        <a href="https://main.snsgroups.com/EnquiryNow/" target="_blank" rel="noreferrer" className="fab-btn" style={{ background: R }} title="Join SNS">
+                            <i className="fas fa-user-plus"></i>
+                            <span>Join SNS</span>
+                        </a>
+                        <a href="https://wa.me/919566423456" target="_blank" rel="noreferrer" className="fab-btn" style={{ background: "#25D366" }} title="Chat on WhatsApp">
+                            <i className="fab fa-whatsapp"></i>
+                            <span>WhatsApp Us</span>
+                        </a>
+                    </div>
+
+                    {pg !== "home" && (<header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "white", borderBottom: "1px solid #eee", padding: "0 20px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <img src="Logo .png" alt="SNS Institutions" onClick={() => setPg("home")} style={{ height: 36, width: "auto", objectFit: "contain", cursor: "pointer" }} />
+                            <div style={{ cursor: "pointer" }} onClick={() => setPg("home")}><div style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-.3px" }}>IIPC Placement Portal</div><div style={{ fontSize: 9, color: "#999", letterSpacing: ".5px" }}>iipc.snsgroups.com</div></div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                            <select value={col} onChange={e => { setCol(e.target.value); setDept("All") }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}><option value="all">All Institutions</option>{colleges.map(c => <option key={c.id} value={c.id}>{c.short}</option>)}</select>
+                            {col !== "all" && <select value={dept} onChange={e => setDept(e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}>{depts.map(d => <option key={d} value={d}>{d}</option>)}</select>}
+                            <select value={yr} onChange={e => setYr(e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}>{YEARS.map(y => <option key={y} value={y}>{y}</option>)}</select>
+                            <SyncBadge />
+                            <a href="mailto:director.iipc.sns@gmail.com" style={{ background: R, color: "white", padding: "7px 16px", borderRadius: 8, fontSize: 11, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>Recruit Now</a>
+                        </div>
+                    </header>)}
+
+                    {/* HOME */}
+                    {pg === "home" && (<div>
+                        <section style={{ minHeight: "100vh", display: "flex", alignItems: "center", position: "relative", background: `linear-gradient(135deg,${D} 0%,${G} 50%,#7B0A1E 100%)`, overflow: "hidden" }}>
+                            <div style={{ position: "absolute", inset: 0, opacity: .04, backgroundImage: "linear-gradient(rgba(255,255,255,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.1) 1px,transparent 1px)", backgroundSize: "50px 50px" }} />
+                            <div style={{ position: "absolute", top: "12%", right: "8%", width: 280, height: 280, borderRadius: "50%", background: `radial-gradient(circle,${R}25,transparent)`, filter: "blur(60px)", animation: "float 6s ease-in-out infinite" }} />
+                            <div style={{ position: "absolute", bottom: "20%", left: "5%", width: 180, height: 180, borderRadius: "50%", background: "radial-gradient(circle,#4ECDC425,transparent)", filter: "blur(40px)", animation: "float 8s ease-in-out infinite 2s" }} />
+                            <div style={{ maxWidth: 1200, margin: "0 auto", padding: "80px 24px 60px", width: "100%", zIndex: 2 }}>
+                                <img src="Logo .png" alt="SNS Institutions" style={{ height: 80, marginBottom: 40, display: "block" }} />
+                                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: `${R}18`, border: `1px solid ${R}30`, borderRadius: 100, padding: "5px 14px", marginBottom: 20 }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ECDC4", animation: "pulse 2s infinite" }} /><span style={{ color: "rgba(255,255,255,.7)", fontSize: 11, fontWeight: 500, letterSpacing: "1px", textTransform: "uppercase" }}>YOP 2025 Placement Drives Active</span></div>
+                                <h1 style={{ fontSize: "clamp(34px,5vw,62px)", fontWeight: 900, color: "white", lineHeight: 1.05, letterSpacing: "-2px", marginBottom: 16 }}>Where <span style={{ color: R }}>Design Thinkers</span><br />Meet Dream Careers</h1>
+                                <p style={{ fontSize: 16, color: "rgba(255,255,255,.5)", lineHeight: 1.7, maxWidth: 560, marginBottom: 32 }}>India's first GenAI-Powered Design Thinking Institution. Comprehensive placement data across SNSCT, SNSCE, and Dr.SNSRCAS.</p>
+                                <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 48 }}>
+                                    <button onClick={() => setPg("dashboard")} style={{ background: R, color: "white", border: "none", padding: "14px 28px", borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'Outfit'" }}>Open Placement Portal →</button>
+                                    <button onClick={() => setPg("drives")} style={{ background: "rgba(255,255,255,.08)", color: "white", border: "1px solid rgba(255,255,255,.2)", padding: "14px 28px", borderRadius: 12, fontSize: 14, fontWeight: 500, cursor: "pointer", backdropFilter: "blur(10px)", fontFamily: "'Outfit'" }}>View Company Drives</button>
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 40 }}>
+                                    {colleges.map((c, i) => { const s = yearlyStats[c.id]?.["2024-25"] || { h: "-", p: 0, e: 1 }; return (<div key={i} className="glass hlift" style={{ borderRadius: 14, padding: 20, cursor: "pointer", borderLeft: `3px solid ${c.color}` }} onClick={() => { setCol(c.id); setPg("dashboard") }}><div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Code: {c.code}</div><div style={{ fontSize: 15, fontWeight: 700, color: "white", marginBottom: 10 }}>{c.short}</div><div style={{ display: "flex", gap: 20 }}><div><div style={{ fontSize: 22, fontWeight: 800, color: c.color, fontFamily: "'Space Mono',monospace" }}>{s.h}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,.35)" }}>Highest</div></div><div><div style={{ fontSize: 22, fontWeight: 800, color: "white", fontFamily: "'Space Mono',monospace" }}>{s.p.toLocaleString()}+</div><div style={{ fontSize: 9, color: "rgba(255,255,255,.35)" }}>Placed</div></div><div><div style={{ fontSize: 22, fontWeight: 800, color: "#4ECDC4", fontFamily: "'Space Mono',monospace" }}>{Math.round(s.p / s.e * 100)}%</div><div style={{ fontSize: 9, color: "rgba(255,255,255,.35)" }}>Rate</div></div></div></div>) })}
+                                </div>
+                                <div style={{ display: "flex", gap: 32, flexWrap: "wrap", paddingTop: 24, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                                    {[{ v: "₹53 LPA", l: "Highest Package" }, { v: "3,350+", l: "Students Placed" }, { v: "555+", l: "Recruiters" }, { v: "₹7.8 LPA", l: "Median (SNSCE)" }, { v: "5,200+", l: "Certifications" }, { v: "6,500+", l: "AI Trained" }].map((s, i) => (<div key={i} style={{ textAlign: "center", flex: "1 1 100px" }}><div style={{ fontSize: 22, fontWeight: 800, color: "white", fontFamily: "'Space Mono',monospace", letterSpacing: "-1px" }}>{s.v}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,.3)", textTransform: "uppercase", letterSpacing: ".8px", marginTop: 2 }}>{s.l}</div></div>))}
+                                </div>
+                            </div>
+                        </section>
+                        <section style={{ padding: "56px 24px", background: D, color: "white" }}>
+                            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+                                <div style={{ textAlign: "center", marginBottom: 36 }}>
+                                    <div style={{ fontSize: 10, fontWeight: 600, color: R, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 8 }}>Recent Placement Highlights</div>
+                                    <div style={{ fontSize: 22, fontWeight: 800, color: "white", letterSpacing: "-.5px" }}>Students Achieving Dream Careers</div>
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14 }}>
+                                    {(highlightData || [
+                                        { n: "120 Students", co: "TCS", r: "₹3.6–7 LPA", c: "All SNS", icon: "🌐", dept: "Multiple Depts" },
+                                        { n: "46 Students", co: "Accenture", r: "₹4–7 LPA", c: "All SNS", icon: "💼", dept: "IT & CS" },
+                                        { n: "56 Students", co: "C.R.I. Pumps", r: "Core Eng", c: "SNSCE", icon: "⚙️", dept: "Mech" },
+                                        { n: "37 Students", co: "Cognizant", r: "₹4–6 LPA", c: "All SNS", icon: "🏢", dept: "Multiple Depts" },
+                                        { n: "8 Students", co: "Intellipaat", r: "₹9 LPA", c: "SNSCT", icon: "🤖", dept: "CSE / AI" },
+                                    ]).map((s, i) => (
+                                        <div key={i} className="glass hlift" style={{ borderRadius: 16, padding: "22px 18px", textAlign: "center", borderTop: `3px solid ${R}`, cursor: "default", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+                                            <div style={{ fontSize: 28, marginBottom: 4 }}>{s.icon}</div>
+                                            <div style={{ fontSize: 18, fontWeight: 800, color: "white", lineHeight: 1.2 }}>{s.n}</div>
+                                            <div style={{ fontSize: 13, color: R, fontWeight: 700 }}>{s.co}</div>
+                                            <div style={{ fontSize: 12, color: "rgba(255,255,255,.6)", fontWeight: 500 }}>{s.r}</div>
+                                            <div style={{ marginTop: 4, padding: "3px 10px", borderRadius: 100, background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", fontSize: 10, color: "rgba(255,255,255,.4)", letterSpacing: ".5px" }}>{s.dept} · {s.c}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+                        <section style={{ padding: "60px 24px", background: "#F5F5F7" }}><div style={{ maxWidth: 1200, margin: "0 auto" }}><h2 style={{ fontSize: 24, fontWeight: 800, textAlign: "center", marginBottom: 32, letterSpacing: "-.5px" }}>Explore the Portal</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>{navItems.filter(n => n.id !== "home").map(n => (<div key={n.id} className="card hlift" style={{ padding: 24, textAlign: "center", cursor: "pointer" }} onClick={() => setPg(n.id)}><div style={{ fontSize: 32, marginBottom: 8 }}>{n.icon}</div><div style={{ fontSize: 15, fontWeight: 700 }}>{n.l}</div></div>))}</div></div></section>
+                        <footer style={{ background: D, color: "white", padding: "80px 24px 30px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 40, marginBottom: 60 }}>
+                                    <div>
+                                        <img src="Logo .png" alt="SNS Institutions" style={{ height: 50, marginBottom: 20 }} />
+                                        <p style={{ fontSize: 13, color: "rgba(255,255,255,.5)", lineHeight: 1.8, marginBottom: 24, maxWidth: 300 }}>Empowering students through India's first GenAI-powered Design Thinking curriculum to meet dynamic industry needs.</p>
+                                        <div style={{ display: "flex", gap: 12 }}>
+                                            {/* Assuming you want generic social icons here as placeholders using FontAwesome since it's loaded in head */}
+                                            {["facebook-f", "twitter", "linkedin-in", "instagram"].map(icon => (
+                                                <a key={icon} href="#" style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", textDecoration: "none", transition: "all .3s" }} className="hover-social">
+                                                    <i className={`fab fa-${icon}`} style={{ fontSize: 14 }}></i>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: "white" }}>Contact Us</h4>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: 14, fontSize: 13, color: "rgba(255,255,255,.6)" }}>
+                                            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><i className="fas fa-envelope" style={{ marginTop: 4, color: R }}></i> <a href="mailto:director.iipc.sns@gmail.com" style={{ color: "rgba(255,255,255,.6)", textDecoration: "none", transition: "color .2s" }} className="hover-text">director.iipc.sns@gmail.com</a></div>
+                                            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><i className="fas fa-phone-alt" style={{ marginTop: 4, color: R }}></i> <div><a href="tel:+919566423456" style={{ color: "rgba(255,255,255,.6)", textDecoration: "none", transition: "color .2s" }} className="hover-text">+91 95664 23456</a> / <a href="tel:+917530093730" style={{ color: "rgba(255,255,255,.6)", textDecoration: "none", transition: "color .2s" }} className="hover-text">75300 93730</a></div></div>
+                                            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><i className="fas fa-map-marker-alt" style={{ marginTop: 4, color: R }}></i> <div>SRI SNS Charitable Trust,<br />Coimbatore - 641 029, Tamil Nadu</div></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: "white" }}>Our Institutions</h4>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                            {[{ n: "SNS College of Technology (SNSCT)", l: "snsct.org" }, { n: "SNS College of Engineering (SNSCE)", l: "snsce.ac.in" }, { n: "Dr. SNS Rajalakshmi College (Dr.SNSRCAS)", l: "drsnsrcas.ac.in" }].map(item => (
+                                                <a key={item.n} href={`https://${item.l}`} target="_blank" style={{ fontSize: 13, color: "rgba(255,255,255,.6)", textDecoration: "none", transition: "color .2s" }} className="hover-text">{item.n}</a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: "white" }}>Quick Links</h4>
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                            {["snsgroups.com", "snsihub.ai"].map(s => (
+                                                <a key={s} href={`https://${s}`} target="_blank" style={{ padding: "8px 14px", borderRadius: 8, background: "rgba(255,255,255,.05)", color: "rgba(255,255,255,.7)", fontSize: 12, textDecoration: "none", border: "1px solid rgba(255,255,255,.1)", transition: "all .3s" }} className="hover-pill">{s}</a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ paddingTop: 30, borderTop: "1px solid rgba(255,255,255,.08)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 20 }}>
+                                    <div style={{ fontSize: 12, color: "rgba(255,255,255,.4)" }}>© {new Date().getFullYear()} SNS Institutions. All rights reserved.</div>
+                                    <div style={{ fontSize: 12, color: "rgba(255,255,255,.5)", fontWeight: 500 }}>❤️ Developed by SNS</div>
+                                </div>
+                            </div>
+                            <style>{`
+                                .hover-social:hover { background: ${R} !important; transform: translateY(-3px); }
+                                .hover-text:hover { color: white !important; }
+                                .hover-pill:hover { background: rgba(255,255,255,.1) !important; border-color: rgba(255,255,255,.2) !important; color: white !important; transform: translateY(-2px); }
+                            `}</style>
+                        </footer>
+                    </div>)}
+
+                    {/* PORTAL */}
+                    {pg !== "home" && (<div style={{ display: "flex", paddingTop: 56 }}>
+                        <aside className="sb" style={{ width: 210, minHeight: "calc(100vh - 56px)", background: "white", borderRight: "1px solid #eee", padding: "14px 8px", position: "fixed", top: 56, left: 0, bottom: 0, overflowY: "auto" }}>
+                            {navItems.map(n => (<button key={n.id} className={`nav-i ${pg === n.id ? "on" : ""}`} onClick={() => setPg(n.id)}><span>{n.icon}</span>{n.l}</button>))}
+                            <div style={{ borderTop: "1px solid #eee", marginTop: 14, paddingTop: 14, paddingLeft: 14 }}><div style={{ fontSize: 10, color: "#bbb", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Filters Active</div><div style={{ fontSize: 11, color: "#888", lineHeight: 1.5 }}><div>College: <strong>{col === "all" ? "All" : colleges.find(c => c.id === col)?.short}</strong></div><div>Dept: <strong>{dept}</strong></div><div>Year: <strong>{yr}</strong></div></div></div>
+                        </aside>
+                        <main className="ma" style={{ marginLeft: 210, flex: 1, padding: "24px 28px", minHeight: "calc(100vh - 56px)" }}>
+
+                            {pg === "dashboard" && (<div>
+                                <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px", marginBottom: 4 }}>Placement Dashboard</h2>
+                                <p style={{ fontSize: 13, color: "#999", marginBottom: 24 }}>{col === "all" ? "All SNS Institutions" : colleges.find(c => c.id === col)?.name}{dept !== "All" ? ` · ${dept}` : ""} · {yr}</p>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 28 }}>
+                                    <StatBox v={stats.p.toLocaleString() + "+"} l="Students Placed" /><StatBox v={stats.h} l="Highest CTC" /><StatBox v={stats.a} l="Avg CTC" c="#333" /><StatBox v={stats.m} l="Median CTC" c="#333" /><StatBox v={stats.r} l="Recruiters" c="#4ECDC4" /><StatBox v={stats.o.toLocaleString() + "+"} l="Total Offers" c="#7FB069" /><StatBox v={rate + "%"} l="Placement Rate" c="#F7B267" />
+                                </div>
+                                <div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Year-over-Year Trend{col !== "all" ? ` — ${colleges.find(c => c.id === col)?.short}` : ""}</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Year</th><th>Placed</th><th>Highest</th><th>Avg</th><th>Recruiters</th><th>Rate</th></tr></thead><tbody>{YEARS.map(y => { if (col === "all") { const tp = Object.keys(yearlyStats).reduce((a, k) => a + (yearlyStats[k][y]?.p || 0), 0); const te = Object.keys(yearlyStats).reduce((a, k) => a + (yearlyStats[k][y]?.e || 0), 0); return <tr key={y} style={{ background: y === yr ? `${R}06` : "transparent" }}><td style={{ fontWeight: 600 }}>{y}</td><td>{tp.toLocaleString()}</td><td>—</td><td>—</td><td>—</td><td>{Math.round(tp / te * 100) || 0}%</td></tr> } const s = yearlyStats[col]?.[y]; if (!s) return null; return <tr key={y} style={{ background: y === yr ? `${R}06` : "transparent" }}><td style={{ fontWeight: 600 }}>{y}</td><td>{s.p.toLocaleString()}</td><td>{s.h}</td><td>{s.a}</td><td>{s.r}</td><td>{Math.round(s.p / s.e * 100) || 0}%</td></tr> })}</tbody></table></div></div>
+                                <div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Salary Distribution</h3>{salaryBands.map((b, i) => { const val = col === "all" ? (b.snsct + b.snsce + b.drsnsrcas) : (b[col] || 0); const mx = col === "all" ? 1500 : 800; return (<div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}><div style={{ width: 70, fontSize: 12, fontWeight: 700, fontFamily: "'Space Mono',monospace", color: "#555", flexShrink: 0 }}>{b.range}</div><div style={{ flex: 1, height: 24, background: "#f0f0f0", borderRadius: 4, overflow: "hidden" }}><div className="bar" style={{ width: `${Math.max((val / mx) * 100, 2)}%`, background: b.c, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8 }}><span style={{ fontSize: 10, fontWeight: 700, color: "white" }}>{val}</span></div></div></div>) })}</div>
+                            </div>)}
+
+                            {pg === "colleges" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Colleges & Departments</h2>{colleges.map(c => { const s = yearlyStats[c.id]?.[yr] || { h: "-", p: 0, e: 1 }; return (<div key={c.id} className="card" style={{ padding: 24, marginBottom: 16, borderLeft: `4px solid ${c.color}`, cursor: "pointer" }} onClick={() => { setCol(c.id); setPg("dashboard") }}><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 14 }}><div><h3 style={{ fontSize: 17, fontWeight: 700 }}>{c.name}</h3><div style={{ fontSize: 12, color: "#999" }}>{c.accr} · Code: {c.code} · {c.poc}</div><div style={{ fontSize: 12, color: "#999" }}>📧 {c.email}{c.phone && ` · 📞 ${c.phone}`}</div></div><div style={{ display: "flex", gap: 10 }}><StatBox v={s.h} l="Highest" /><StatBox v={s.p.toLocaleString()} l="Placed" /><StatBox v={Math.round(s.p / s.e * 100) + "%"} l="Rate" c="#4ECDC4" /></div></div><div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{(deptMap[c.id] || []).filter(d => d !== "All").map(d => (<span key={d} onClick={e => { e.stopPropagation(); setCol(c.id); setDept(d); setPg("dashboard") }} style={{ padding: "4px 12px", borderRadius: 100, background: "#f0f0f0", fontSize: 11, fontWeight: 500, color: "#555", cursor: "pointer", transition: "all .2s" }}>{d}</span>))}</div></div>) })}</div>)}
+
+                            {pg === "drives" && (<div><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}><h2 style={{ fontSize: 22, fontWeight: 800 }}>Company Visit History</h2><input className="srch" placeholder="Search company..." value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth: 250 }} /></div><div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>{["all", ...CATS].map(c => <button key={c} className={`pill ${catF === c ? "on" : ""}`} onClick={() => setCatF(c)}>{c === "all" ? "All" : c}</button>)}</div><div className="card" style={{ overflow: "auto", maxHeight: 600 }}><table className="tbl"><thead><tr><th>Company</th><th>Date</th><th>Package</th><th>Roles</th><th>Category</th><th>College</th><th>Dept</th><th>Status</th><th>Placed</th></tr></thead><tbody>{fv.map((v, i) => (<tr key={i}><td style={{ fontWeight: 600 }}>{v.co}</td><td style={{ fontSize: 12, color: "#888" }}>{v.dt}</td><td style={{ fontWeight: 600, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{v.pk}</td><td style={{ fontSize: 12, color: "#666" }}>{v.ro}</td><td><Badge bg={v.cat.includes("IT Prod") ? "#E3F2FD" : v.cat.includes("Core") ? "#FFF3E0" : v.cat.includes("Sales") ? "#F3E5F5" : "#E8F5E9"} fg={v.cat.includes("IT Prod") ? "#1565C0" : v.cat.includes("Core") ? "#E65100" : v.cat.includes("Sales") ? "#7B1FA2" : "#2E7D32"}>{v.cat}</Badge></td><td style={{ fontSize: 12 }}>{v.cl === "all" ? "All" : v.cl.toUpperCase()}</td><td style={{ fontSize: 12, color: "#888" }}>{v.dept}</td><td><Badge bg={v.st === "Completed" ? "#E8F5E9" : v.st.includes("Progress") ? "#FFF3E0" : "#E3F2FD"} fg={v.st === "Completed" ? "#2E7D32" : v.st.includes("Progress") ? "#E65100" : "#1565C0"}>{v.st}</Badge></td><td style={{ fontWeight: 600, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{v.sp || "—"}</td></tr>))}</tbody></table></div><div style={{ marginTop: 10, fontSize: 11, color: "#bbb" }}>{fv.length} drives shown</div></div>)}
+
+                            {pg === "salary" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Salary Analysis</h2><div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Package Distribution by College ({yr})</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Band</th><th>SNSCT</th><th>SNSCE</th><th>Dr.SNSRCAS</th><th>Total</th></tr></thead><tbody>{salaryBands.map((b, i) => <tr key={i}><td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td><td>{b.snsct}</td><td>{b.snsce}</td><td>{b.drsnsrcas}</td><td style={{ fontWeight: 700 }}>{b.snsct + b.snsce + b.drsnsrcas}</td></tr>)}</tbody></table></div></div><div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top Package Companies</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Company</th><th>Package</th><th>Year</th><th>College</th><th>Category</th></tr></thead><tbody>{[{ c: "ServiceNow", p: "₹32 LPA", y: "2023-24", cl: "SNSCT", ct: "IT Product" }, { c: "Juspay", p: "₹10-21 LPA", y: "2024-25", cl: "SNSCE", ct: "IT Product" }, { c: "Cadence", p: "₹15 LPA", y: "2023-24", cl: "SNSCT", ct: "Core (VLSI)" }, { c: "Zoho", p: "₹10-14 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Sobha", p: "₹13.5 LPA", y: "2023-24", cl: "SNSCT", ct: "Core" }, { c: "Amazon", p: "₹8-15 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "PayPal", p: "₹8-12 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Deloitte", p: "₹7-12 LPA", y: "2024-25", cl: "SNSCT", ct: "Consulting" }, { c: "Intellipaat", p: "₹9 LPA", y: "2024-25", cl: "SNSCT+SNSCE", ct: "IT Services" }, { c: "KAAR Tech", p: "₹6-9 LPA", y: "2024-25", cl: "SNSCT", ct: "SAP" }].map((r, i) => <tr key={i}><td style={{ fontWeight: 600 }}>{r.c}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace" }}>{r.p}</td><td>{r.y}</td><td>{r.cl}</td><td style={{ fontSize: 12, color: "#888" }}>{r.ct}</td></tr>)}</tbody></table></div></div></div>)}
+
+                            {pg === "students" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Placed Students Directory</h2><p style={{ fontSize: 13, color: "#999", marginBottom: 20 }}>Student profiles with photo, LinkedIn, LeetCode, GitHub. Filterable by college, department, year.</p><div className="card" style={{ overflow: "auto" }}><table className="tbl"><thead><tr><th></th><th>Name</th><th>Dept</th><th>College</th><th>YOP</th><th>Company</th><th>CTC</th><th>Role</th><th>Profiles</th></tr></thead><tbody>{placed.map((s, i) => (<tr key={i}><td><div style={{ width: 30, height: 30, borderRadius: "50%", background: "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, overflow: "hidden" }}>{s.photo && s.photo.trim().startsWith("http") ? <img src={s.photo} alt={s.n} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerText = '👤'; }} /> : "👤"}</div></td><td style={{ fontWeight: 600 }}>{s.n}</td><td style={{ fontSize: 12 }}>{s.dept || "—"}</td><td style={{ fontSize: 12 }}>{s.c}</td><td style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>{s.yop || "—"}</td><td style={{ fontWeight: 600 }}>{s.co}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{s.ctc || "—"}</td><td style={{ fontSize: 12, color: "#666" }}>{s.r || "—"}</td><td style={{ fontSize: 11, display: "flex", gap: 10, alignItems: "center" }}>{s.li && s.li.trim() !== "" ? <a href={s.li} target="_blank" style={{ color: "#0A66C2", cursor: "pointer", textDecoration: "none", fontSize: 16 }} title="LinkedIn"><i className="fab fa-linkedin"></i></a> : <span style={{ color: "#ccc", fontSize: 16 }}><i className="fab fa-linkedin"></i></span>} {s.gh && s.gh.trim() !== "" ? <a href={s.gh} target="_blank" style={{ color: "#333", cursor: "pointer", textDecoration: "none", fontSize: 16 }} title="GitHub"><i className="fab fa-github"></i></a> : <span style={{ color: "#ccc", fontSize: 16 }}><i className="fab fa-github"></i></span>} {s.lc && s.lc.trim() !== "" ? <a href={s.lc} target="_blank" style={{ color: "#F89F1B", cursor: "pointer", textDecoration: "none", display: "flex", alignItems: "center" }} title="LeetCode"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.055 5.055 0 0 0-3.588-1.419c-1.328 0-2.61.545-3.55 1.5l-4.296 4.352c-.956.956-1.48 2.23-1.48 3.585 0 1.341.524 2.615 1.48 3.57l4.314 4.347c.94.94 2.222 1.487 3.55 1.487 1.314 0 2.583-.547 3.535-1.487l2.645-2.557c.514-.516.496-1.367-.039-1.901-.535-.536-1.386-.554-1.9-.039zM20.811 13.01H10.666c-.702 0-1.27.604-1.27 1.346s.568 1.346 1.27 1.346h10.145c.701 0 1.27-.604 1.27-1.346s-.569-1.346-1.27-1.346z" /></svg></a> : <span style={{ color: "#ccc", display: "flex", alignItems: "center" }}><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.055 5.055 0 0 0-3.588-1.419c-1.328 0-2.61.545-3.55 1.5l-4.296 4.352c-.956.956-1.48 2.23-1.48 3.585 0 1.341.524 2.615 1.48 3.57l4.314 4.347c.94.94 2.222 1.487 3.55 1.487 1.314 0 2.583-.547 3.535-1.487l2.645-2.557c.514-.516.496-1.367-.039-1.901-.535-.536-1.386-.554-1.9-.039zM20.811 13.01H10.666c-.702 0-1.27.604-1.27 1.346s.568 1.346 1.27 1.346h10.145c.701 0 1.27-.604 1.27-1.346s-.569-1.346-1.27-1.346z" /></svg></span>}</td></tr>))}</tbody></table></div></div>)}
+
+                            {pg === "training" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Training Programs</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginBottom: 28 }}>{Object.values(trainingData).map((t, i) => (<div key={i} className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, color: R, marginBottom: 4 }}>{t.t}</h3><div style={{ fontSize: 11, color: "#999", fontWeight: 600, marginBottom: 8 }}>Partner: {t.p}</div><p style={{ fontSize: 12, color: "#666", lineHeight: 1.6, marginBottom: 12 }}>{t.d}</p><div style={{ display: "flex", flexDirection: "column", gap: 5 }}>{t.m.map((m, j) => <div key={j} style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ width: 4, height: 4, borderRadius: "50%", background: R, flexShrink: 0 }} /><span style={{ fontSize: 12, color: "#555" }}>{m}</span></div>)}</div></div>))}</div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Training Platforms</h3><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10, marginBottom: 28 }}>{platformData.map((p, i) => <div key={i} className="card" style={{ padding: 14 }}><div style={{ fontSize: 13, fontWeight: 700 }}>{p.n}</div><div style={{ fontSize: 11, color: "#888" }}>{p.u}</div></div>)}</div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Global Certifications — 5,200+</h3><div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}><div className="card" style={{ padding: 20, flex: "1 1 340px" }}><h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>IT Certifications</h4>{certData.it.map((c, i) => <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #f5f5f5" }}><span style={{ fontSize: 12 }}>{c.n}</span><span style={{ fontSize: 13, fontWeight: 800, color: c.cl, fontFamily: "'Space Mono',monospace" }}>{c.c.toLocaleString()}</span></div>)}</div><div className="card" style={{ padding: 20, flex: "1 1 240px" }}><h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Core Certifications</h4>{certData.core.map((c, i) => <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #f5f5f5" }}><span style={{ fontSize: 12 }}>{c.n}</span><span style={{ fontSize: 13, fontWeight: 800, color: c.cl, fontFamily: "'Space Mono',monospace" }}>{c.c}</span></div>)}</div></div></div>)}
+
+                            {pg === "upcoming" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Upcoming Drives & Certifications</h2><p style={{ fontSize: 13, color: "#999", marginBottom: 24 }}>Track drives and certification availability for YOP 2025.</p><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>📅 Upcoming Drives</h3><div className="card" style={{ overflow: "auto", marginBottom: 28 }}><table className="tbl"><thead><tr><th>Company</th><th>Date</th><th>Package</th><th>Roles</th><th>Eligibility</th><th>College</th></tr></thead><tbody>{upcoming.filter(d => col === "all" || d.cl === col).map((d, i) => (<tr key={i}><td style={{ fontWeight: 700 }}>{d.co}</td><td><Badge bg="#FFF3E0" fg="#E65100">{d.dt}</Badge></td><td style={{ fontWeight: 600, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{d.pk}</td><td style={{ fontSize: 12, color: "#666" }}>{d.ro}</td><td style={{ fontSize: 11, color: "#888" }}>{d.el}</td><td style={{ fontSize: 12 }}>{d.cl.toUpperCase()}</td></tr>))}</tbody></table></div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>🏅 Certified Talent Pool for Recruiters</h3><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>{[{ n: "Microsoft Azure/365", s: "2,812", d: "CSE, IT" }, { n: "Databricks", s: "1,374", d: "AI&DS, CSE" }, { n: "AWS", s: "627", d: "CSE, IT, ECE" }, { n: "GenAI/Agentic AI", s: "6,500+", d: "All Depts" }, { n: "NVIDIA DL", s: "64", d: "AI&ML" }, { n: "Salesforce", s: "75", d: "CSE, MBA" }, { n: "CATIA (Mech CAD)", s: "75", d: "Mech, Aero" }, { n: "BIM (Civil)", s: "35", d: "Civil" }].map((c, i) => (<div key={i} className="card" style={{ padding: 14 }}><div style={{ fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{c.n}</div><div style={{ fontSize: 20, fontWeight: 800, color: R, fontFamily: "'Space Mono',monospace" }}>{c.s}</div><div style={{ fontSize: 10, color: "#999" }}>Depts: {c.d}</div><Badge bg="#E8F5E9" fg="#2E7D32">Available</Badge></div>))}</div></div>)}
+
+                            {pg === "facilities" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Campus Placement Facilities</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>{facilityData.map((f, i) => <div key={i} className="card" style={{ padding: 18, display: "flex", gap: 12, alignItems: "flex-start" }}><div style={{ fontSize: 26, flexShrink: 0 }}>{f.i}</div><div><div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{f.t}</div><div style={{ fontSize: 12, color: "#888" }}>{f.d}</div></div></div>)}</div><div className="card" style={{ padding: 24, marginTop: 20, borderLeft: `4px solid ${R}` }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>IIPC Mission</h3><p style={{ fontSize: 13, color: "#666", lineHeight: 1.7 }}>The Industry Institute Partnership Cell synergizes academic activities with industry needs through strategic planning. SNSCT IIPC functions with excellent rapport with industries in and around Coimbatore — offering technical consultancy, latest engineering courses, sponsored R&D, seminars, workshops, and industrial training programmes.</p></div></div>)}
+
+                        </main>
+                    </div>)}
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+
+</html>
