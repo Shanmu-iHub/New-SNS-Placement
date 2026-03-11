@@ -442,7 +442,16 @@
         .bar{height:24px;border-radius:4px;transition:width 1s ease}
         .hlift{transition:all .3s}.hlift:hover{transform:translateY(-5px);box-shadow:0 12px 40px rgba(0,0,0,.1)}
         .srch{width:100%;padding:10px 14px;border-radius:10px;border:1px solid #e0e0e0;font-size:13px;font-family:'Outfit';outline:none}.srch:focus{border-color:${R}}
-        @media(max-width:900px){.sb{display:none!important}.ma{margin-left:0!important}}
+        @media(max-width:900px){
+            .sb{display:none!important}
+            .ma{margin-left:0!important; padding: 16px!important;}
+            .mob-nav{display:flex!important}
+            .mob-hdr{height:auto!important; padding: 12px 20px!important;}
+            .mob-fts{margin-top: 10px; width: 100%; justify-content: flex-start!important;}
+            .portal-wrap{padding-top: 100px!important;}
+        }
+        .mob-nav{display:none; overflow-x:auto; gap:8px; padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid #eee; scrollbar-width:none}
+        .mob-nav::-webkit-scrollbar{display:none;width:0;height:0}
         @keyframes bounce-in { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
         .fab-btn { position: relative; display: flex; align-items: center; justify-content: flex-start; width: 50px; height: 50px; border-radius: 50px; color: white; font-size: 22px; text-decoration: none; box-shadow: 0 4px 14px rgba(0,0,0,0.25); transition: width 0.3s ease, border-radius 0.3s; z-index: 1000; overflow: hidden; }
         .fab-btn i { display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; flex-shrink: 0; }
@@ -463,12 +472,12 @@
                         </a>
                     </div>
 
-                    {pg !== "home" && (<header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "white", borderBottom: "1px solid #eee", padding: "0 20px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    {pg !== "home" && (<header className="mob-hdr" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "white", borderBottom: "1px solid #eee", padding: "0 20px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <img src="Logo .png" alt="SNS Institutions" onClick={() => setPg("home")} style={{ height: 36, width: "auto", objectFit: "contain", cursor: "pointer" }} />
                             <div style={{ cursor: "pointer" }} onClick={() => setPg("home")}><div style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-.3px" }}>IIPC Placement Portal</div><div style={{ fontSize: 9, color: "#999", letterSpacing: ".5px" }}>iipc.snsgroups.com</div></div>
                         </div>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                        <div className="mob-fts" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
                             <select value={col} onChange={e => { setCol(e.target.value); setDept("All") }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}><option value="all">All Institutions</option>{colleges.map(c => <option key={c.id} value={c.id}>{c.short}</option>)}</select>
                             {col !== "all" && <select value={dept} onChange={e => setDept(e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}>{depts.map(d => <option key={d} value={d}>{d}</option>)}</select>}
                             <select value={yr} onChange={e => setYr(e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}>{YEARS.map(y => <option key={y} value={y}>{y}</option>)}</select>
@@ -506,7 +515,7 @@
                                     <div style={{ fontSize: 10, fontWeight: 600, color: R, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 8 }}>Recent Placement Highlights</div>
                                     <div style={{ fontSize: 22, fontWeight: 800, color: "white", letterSpacing: "-.5px" }}>Students Achieving Dream Careers</div>
                                 </div>
-                                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14 }}>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
                                     {(highlightData || [
                                         { n: "120 Students", co: "TCS", r: "₹3.6–7 LPA", c: "All SNS", icon: "🌐", dept: "Multiple Depts" },
                                         { n: "46 Students", co: "Accenture", r: "₹4–7 LPA", c: "All SNS", icon: "💼", dept: "IT & CS" },
@@ -525,7 +534,7 @@
                                 </div>
                             </div>
                         </section>
-                        <section style={{ padding: "60px 24px", background: "#F5F5F7" }}><div style={{ maxWidth: 1200, margin: "0 auto" }}><h2 style={{ fontSize: 24, fontWeight: 800, textAlign: "center", marginBottom: 32, letterSpacing: "-.5px" }}>Explore the Portal</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>{navItems.filter(n => n.id !== "home").map(n => (<div key={n.id} className="card hlift" style={{ padding: 24, textAlign: "center", cursor: "pointer" }} onClick={() => setPg(n.id)}><div style={{ fontSize: 32, marginBottom: 8 }}>{n.icon}</div><div style={{ fontSize: 15, fontWeight: 700 }}>{n.l}</div></div>))}</div></div></section>
+                        <section style={{ padding: "60px 24px", background: "#F5F5F7" }}><div style={{ maxWidth: 1200, margin: "0 auto" }}><h2 style={{ fontSize: 24, fontWeight: 800, textAlign: "center", marginBottom: 32, letterSpacing: "-.5px" }}>Explore the Portal</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 14 }}>{navItems.filter(n => n.id !== "home").map(n => (<div key={n.id} className="card hlift" style={{ padding: 24, textAlign: "center", cursor: "pointer" }} onClick={() => setPg(n.id)}><div style={{ fontSize: 32, marginBottom: 8 }}>{n.icon}</div><div style={{ fontSize: 15, fontWeight: 700 }}>{n.l}</div></div>))}</div></div></section>
                         <footer style={{ background: D, color: "white", padding: "80px 24px 30px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                             <div style={{ maxWidth: 1200, margin: "0 auto" }}>
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 40, marginBottom: 60 }}>
@@ -580,12 +589,15 @@
                     </div>)}
 
                     {/* PORTAL */}
-                    {pg !== "home" && (<div style={{ display: "flex", paddingTop: 56 }}>
+                    {pg !== "home" && (<div className="portal-wrap" style={{ display: "flex", paddingTop: 56 }}>
                         <aside className="sb" style={{ width: 210, minHeight: "calc(100vh - 56px)", background: "white", borderRight: "1px solid #eee", padding: "14px 8px", position: "fixed", top: 56, left: 0, bottom: 0, overflowY: "auto" }}>
                             {navItems.map(n => (<button key={n.id} className={`nav-i ${pg === n.id ? "on" : ""}`} onClick={() => setPg(n.id)}><span>{n.icon}</span>{n.l}</button>))}
                             <div style={{ borderTop: "1px solid #eee", marginTop: 14, paddingTop: 14, paddingLeft: 14 }}><div style={{ fontSize: 10, color: "#bbb", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Filters Active</div><div style={{ fontSize: 11, color: "#888", lineHeight: 1.5 }}><div>College: <strong>{col === "all" ? "All" : colleges.find(c => c.id === col)?.short}</strong></div><div>Dept: <strong>{dept}</strong></div><div>Year: <strong>{yr}</strong></div></div></div>
                         </aside>
-                        <main className="ma" style={{ marginLeft: 210, flex: 1, padding: "24px 28px", minHeight: "calc(100vh - 56px)" }}>
+                        <main className="ma" style={{ marginLeft: 210, flex: 1, padding: "24px 28px", minHeight: "calc(100vh - 56px)", width: "100%", overflowX: "hidden" }}>
+                            <div className="mob-nav">
+                                {navItems.map(n => (<button key={n.id} className={`nav-i ${pg === n.id ? "on" : ""}`} onClick={() => setPg(n.id)} style={{ width: "auto", display: "inline-flex", justifyContent: "center", border: "1px solid #eee", background: pg === n.id ? `${R}0D` : "white" }}><span>{n.icon}</span>{n.l}</button>))}
+                            </div>
 
                             {pg === "dashboard" && (<div>
                                 <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px", marginBottom: 4 }}>Placement Dashboard</h2>
