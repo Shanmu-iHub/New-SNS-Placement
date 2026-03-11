@@ -123,7 +123,7 @@
 
         const parseColleges = (rows) => rows.filter(r => r.is_active !== 'FALSE').map(r => ({
             id: r.college_id, name: r.college_name, short: r.short_name, code: r.code,
-            accr: r.accreditation, email: r.email, phone: r.phone, poc: r.poc, color: r.color_code || '#C41230'
+            accr: r.accreditation, email: r.email, phone: r.phone, poc: r.poc, color: r.color || r.color_code || '#C41230'
         }));
 
         const parseDepartments = (rows) => {
