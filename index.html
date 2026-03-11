@@ -604,8 +604,17 @@
                                     </div>
                                     <div>
                                         <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: "white" }}>Our Institutions</h4>
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                                            {[{ n: "SNS College of Technology (SNSCT)", l: "snsct.org" }, { n: "SNS College of Engineering (SNSCE)", l: "snsce.ac.in" }, { n: "Dr. SNS Rajalakshmi College (Dr.SNSRCAS)", l: "drsnsrcas.ac.in" }].map(item => (
+                                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                            {[
+                                                { n: "SNS College of Technology (SNSCT)", l: "snsct.org" },
+                                                { n: "SNS College of Engineering (SNSCE)", l: "snsce.ac.in" },
+                                                { n: "Dr. SNS Rajalakshmi College (Dr.SNSRCAS)", l: "drsnsrcas.ac.in" },
+                                                { n: "SNS College of Pharmacy and Health Sciences", l: "snscphs.org" },
+                                                { n: "SNS College of Nursing", l: "snscn.org" },
+                                                { n: "SNS College of Physiotherapy", l: "snscpt.org" },
+                                                { n: "SNS College of Allied Health Sciences", l: "snscahs.org" },
+                                                { n: "SNS Academy", l: "snsacademy.org" }
+                                            ].map(item => (
                                                 <a key={item.n} href={`https://${item.l}`} target="_blank" style={{ fontSize: 13, color: "rgba(255,255,255,.6)", textDecoration: "none", transition: "color .2s" }} className="hover-text">{item.n}</a>
                                             ))}
                                         </div>
