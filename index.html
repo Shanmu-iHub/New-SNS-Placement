@@ -474,11 +474,16 @@
         .srch{width:100%;padding:10px 14px;border-radius:10px;border:1px solid #e0e0e0;font-size:13px;font-family:'Outfit';outline:none}.srch:focus{border-color:${R}}
         @media(max-width:900px){
             .sb{display:none!important}
-            .ma{margin-left:0!important; padding: 16px!important;}
-            .mob-nav{display:flex!important}
+            .ma{margin-left:0!important; padding: 16px!important; padding-bottom: 85px!important;}
+            .mob-nav{
+                display:flex!important; position:fixed!important; bottom:0!important; left:0!important; right:0!important; background:white!important; z-index:1001!important;
+                padding:12px 16px!important; margin:0!important; border-top:1px solid #eee!important; border-bottom:none!important; box-shadow:0 -4px 12px rgba(0,0,0,0.05)!important;
+                overflow-x:auto!important; scrollbar-width:none!important; -webkit-overflow-scrolling:touch;
+            }
             .mob-hdr{height:auto!important; padding: 12px 20px!important;}
             .mob-fts{margin-top: 10px; width: 100%; justify-content: flex-start!important;}
             .portal-wrap{padding-top: 100px!important;}
+            .fab-container { bottom: 85px!important; right: 16px!important; transform: scale(0.85); transform-origin: bottom right; }
         }
         .mob-nav{display:none; overflow-x:auto; gap:8px; padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid #eee; scrollbar-width:none}
         .mob-nav::-webkit-scrollbar{display:none;width:0;height:0}
@@ -491,7 +496,7 @@
       `}</style>
 
                     {/* Floating Action Buttons */}
-                    <div style={{ position: "fixed", bottom: 30, right: 30, display: "flex", flexDirection: "column", gap: 16, zIndex: 1000 }}>
+                    <div className="fab-container" style={{ position: "fixed", bottom: 30, right: 30, display: "flex", flexDirection: "column", gap: 16, zIndex: 1000 }}>
                         <a href="https://main.snsgroups.com/EnquiryNow/" target="_blank" rel="noreferrer" className="fab-btn" style={{ background: R }} title="Join SNS">
                             <i className="fas fa-user-plus"></i>
                             <span>Join SNS</span>
@@ -678,7 +683,7 @@
                         </aside>
                         <main className="ma" style={{ marginLeft: 210, flex: 1, padding: "24px 28px", minHeight: "calc(100vh - 56px)", width: "100%", overflowX: "hidden" }}>
                             <div className="mob-nav">
-                                {navItems.map(n => (<button key={n.id} className={`nav-i ${pg === n.id ? "on" : ""}`} onClick={() => setPg(n.id)} style={{ width: "auto", display: "inline-flex", justifyContent: "center", border: "1px solid #eee", background: pg === n.id ? `${R}0D` : "white" }}><span>{n.icon}</span>{n.l}</button>))}
+                                {navItems.map(n => (<button key={n.id} className={`nav-i ${pg === n.id ? "on" : ""}`} onClick={() => setPg(n.id)} style={{ width: "auto", display: "inline-flex", justifyContent: "center", border: "1px solid #eee", background: pg === n.id ? `${R}0D` : "white", flexShrink: 0, whiteSpace: "nowrap" }}><span>{n.icon}</span>{n.l}</button>))}
                             </div>
 
                             {pg === "dashboard" && (<div>
