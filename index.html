@@ -513,7 +513,16 @@
                             <div style={{ cursor: "pointer" }} onClick={() => setPg("home")}><div style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-.3px" }}>IIPC Placement Portal</div><div style={{ fontSize: 9, color: "#999", letterSpacing: ".5px" }}>iipc.snsgroups.com</div></div>
                         </div>
                         <div className="mob-fts" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                            <select value={col} onChange={e => { setCol(e.target.value); setDept("All") }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}><option value="all">All Institutions</option>{colleges.map(c => <option key={c.id} value={c.id}>{c.short}</option>)}</select>
+                            <select value={col} onChange={e => {
+                                const newCol = e.target.value;
+                                setCol(newCol);
+                                setDept("All");
+                                const defaultY = (newCol || "").toLowerCase() === 'snsct' || newCol === 'all' ? '2025-26' : '2024-25';
+                                setYr(defaultY);
+                            }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}>
+                                <option value="all">All Institutions</option>
+                                {colleges.map(c => <option key={c.id} value={c.id}>{c.short}</option>)}
+                            </select>
                             {col !== "all" && <select value={dept} onChange={e => setDept(e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}>{depts.map(d => <option key={d} value={d}>{d}</option>)}</select>}
                             <select value={yr} onChange={e => setYr(e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}>{YEARS.map(y => <option key={y} value={y}>{y}</option>)}</select>
                             <SyncBadge />
@@ -538,11 +547,14 @@
                                 </div>
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 40 }}>
                                     {colleges.map((c, i) => {
-                                        const s = yearlyStats[c.id]?.["2025-26"] || { h: "-", p: 0, e: 1 };
-                                        const highestVal = s.h.replace(/[^0-9.]/g, '');
-                                        const highestUnit = s.h.replace(/[0-9.]/g, '').trim() || "";
+                                        const getDisplayYear = (id) => (id || "").toLowerCase() === 'snsct' ? '2025-26' : '2024-25';
+                                        const displayYear = getDisplayYear(c.id);
+                                        const s = yearlyStats[c.id]?.[displayYear] || { h: "-", p: 0, e: 1 };
+                                        const hStr = s.h ? String(s.h) : "-";
+                                        const highestVal = hStr.replace(/[^0-9.]/g, '');
+                                        const highestUnit = hStr.replace(/[0-9.]/g, '').trim() || "";
                                         return (
-                                            <div key={i} className="glass hlift coll-card" style={{ borderRadius: 14, padding: 20, cursor: "pointer", position: "relative", overflow: "hidden", border: `1px solid rgba(255,255,255,.05)` }} onClick={() => { setCol(c.id); setPg("dashboard") }}>
+                                            <div key={i} className="glass hlift coll-card" style={{ borderRadius: 14, padding: 20, cursor: "pointer", position: "relative", overflow: "hidden", border: `1px solid rgba(255,255,255,.05)` }} onClick={() => { setCol(c.id); setYr(displayYear); setPg("dashboard") }}>
                                                 <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 3, background: c.color }} />
                                                 <div style={{ position: "absolute", inset: 0, background: `radial-gradient(120px circle at top right, ${c.color}20, transparent)`, pointerEvents: "none" }} />
                                                 <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Code: {c.code}</div>
