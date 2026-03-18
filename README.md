@@ -33,7 +33,7 @@ Currently, the entire application logic, styling, and data-fetching layer are en
 
 *   `index.html`: The core application file containing the React components, CSS definitions, and Google Sheets fetch protocols.
 *   `README.md`: Project documentation.
-*   `Logo .png`: Institution Brand Logo.
+*   `SNS-DT Logo.png`: Institution Brand Logo.
 
 ## ⚙️ How it Works (Data Flow)
 
@@ -62,7 +62,7 @@ Then navigate to `http://localhost:8000` in your browser.
 
 ### Deployment
 
-To deploy, simply host the `index.html` file and the associated `Logo .png` on any static web hosting provider (e.g., GitHub Pages, Vercel, Netlify, or AWS S3).
+To deploy, simply host the `index.html` file and the associated `SNS-DT Logo.png` on any static web hosting provider (e.g., GitHub Pages, Vercel, Netlify, or AWS S3).
 
 ---
 *❤️ Developed by SNS*
