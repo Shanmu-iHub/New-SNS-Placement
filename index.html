@@ -239,23 +239,44 @@
 
         const COLLEGES = [
             { id: "snsct", name: "SNS College of Technology", short: "SNSCT", code: "2726", accr: "NAAC A++ | Autonomous", email: "it.iipc@snsgroups.com", phone: "9629937863", poc: "Mr. P. Saravanan", color: "#C41230" },
-            { id: "snsce", name: "SNS College of Engineering", short: "SNSCE", code: "SNSCE", accr: "NAAC A++ | Autonomous", email: "placement@snsce.ac.in", phone: "", poc: "IIPC SNSCE", color: "#E63946" },
+            { id: "snsce", name: "SNS College of Engineering", short: "SNSCE", code: "2734", accr: "NAAC A++ | Autonomous", email: "placement@snsce.ac.in", phone: "", poc: "IIPC SNSCE", color: "#E63946" },
             { id: "drsnsrcas", name: "Dr.SNS Rajalakshmi College of Arts & Science", short: "Dr.SNSRCAS", code: "326", accr: "Autonomous", email: "arts.iipc@snsgroups.com", phone: "9994830099", poc: "IIPC Dr.SNSRCAS", color: "#F4845F" },
+            { id: "snscn", name: "SNS College of Nursing", short: "SNSCN", code: "879", accr: "Nursing Council", email: "nursing@snsgroups.com", phone: "", poc: "IIPC SNSCN", color: "#E6126D" },
+            { id: "snscahs", name: "SNS College of Allied Health Sciences", short: "SNSCAHS", code: "AHS", accr: "Health Sciences", email: "ahs@snsgroups.com", phone: "", poc: "IIPC SNSCAHS", color: "#1565C0" },
+            { id: "snscphysio", name: "SNS College of Physiotherapy", short: "SNSCPHYSIO", code: "PHYSIO", accr: "Physiotherapy", email: "physio@snsgroups.com", phone: "", poc: "IIPC SNSCPHYSIO", color: "#009688" },
+            { id: "snscphs", name: "SNS College of Pharmacy and Health Sciences", short: "SNSCPHS", code: "794", accr: "Pharmacy Council", email: "pharmacy@snsgroups.com", phone: "", poc: "IIPC SNSCPHS", color: "#673AB7" },
         ];
 
         const DEPTS = {
             snsct: ["All", "CSE", "IT", "AI & Data Science", "AI & ML", "ECE", "EEE", "Mech", "Civil", "Aero", "Mechatronics", "Bio-Medical", "Food Tech", "MBA", "MCA"],
             snsce: ["All", "CSE", "IT", "ECE", "EEE", "Mech", "Civil"],
             drsnsrcas: ["All", "BCA", "B.Sc CS", "B.Sc AI&DS", "B.Sc Full Stack", "B.Sc Cyber Security", "BBA", "B.Com", "B.Com CA", "MBA", "MCA", "M.Sc CS"],
+            snscn: ["All", "B.Sc Nursing"],
+            snscahs: ["All", "B.Sc AHS"],
+            snscphysio: ["All", "BPT"],
+            snscphs: ["All", "B.Pharm", "D.Pharm"],
         };
 
         const YEARS = ["2025-26", "2024-25", "2023-24", "2022-23", "2021-22", "2020-21"];
 
         const YS = {
-            snsct: { "2025-26": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 }, "2024-25": { h: "21 LPA", a: "4.5 LPA", m: "3.6 LPA", p: 1645, e: 1713, r: 454, o: 2100 }, "2023-24": { h: "19 LPA", a: "4.2 LPA", m: "3.5 LPA", p: 1008, e: 1080, r: 244, o: 1300 }, "2022-23": { h: "13.5 LPA", a: "4 LPA", m: "3.2 LPA", p: 900, e: 1000, r: 200, o: 1100 }, "2021-22": { h: "12 LPA", a: "3.8 LPA", m: "3 LPA", p: 820, e: 950, r: 180, o: 950 }, "2020-21": { h: "10 LPA", a: "3.5 LPA", m: "2.8 LPA", p: 750, e: 900, r: 160, o: 850 } },
+            snsct: { "2025-26": { h: "53 LPA", a: "4.8 LPA", m: "4 LPA", p: 984, e: 1025, r: 150, o: 1100 }, "2024-25": { h: "21 LPA", a: "4.5 LPA", m: "3.6 LPA", p: 1645, e: 1713, r: 454, o: 2100 }, "2023-24": { h: "19 LPA", a: "4.2 LPA", m: "3.5 LPA", p: 1008, e: 1080, r: 244, o: 1300 }, "2022-23": { h: "13.5 LPA", a: "4 LPA", m: "3.2 LPA", p: 900, e: 1000, r: 200, o: 1100 }, "2021-22": { h: "12 LPA", a: "3.8 LPA", m: "3 LPA", p: 820, e: 950, r: 180, o: 950 }, "2020-21": { h: "10 LPA", a: "3.5 LPA", m: "2.8 LPA", p: 750, e: 900, r: 160, o: 850 } },
             snsce: { "2025-26": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 }, "2024-25": { h: "21 LPA", a: "5 LPA", m: "7.8 LPA", p: 800, e: 900, r: 165, o: 1000 }, "2023-24": { h: "13.5 LPA", a: "4.5 LPA", m: "4 LPA", p: 650, e: 750, r: 140, o: 800 }, "2022-23": { h: "10 LPA", a: "4 LPA", m: "3.5 LPA", p: 550, e: 650, r: 120, o: 680 }, "2021-22": { h: "8 LPA", a: "3.6 LPA", m: "3 LPA", p: 480, e: 580, r: 100, o: 560 }, "2020-21": { h: "7 LPA", a: "3.2 LPA", m: "2.8 LPA", p: 400, e: 520, r: 85, o: 470 } },
             drsnsrcas: { "2025-26": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 }, "2024-25": { h: "9 LPA", a: "3.5 LPA", m: "3 LPA", p: 500, e: 600, r: 100, o: 600 }, "2023-24": { h: "7 LPA", a: "3 LPA", m: "2.8 LPA", p: 420, e: 520, r: 80, o: 500 }, "2022-23": { h: "6 LPA", a: "2.8 LPA", m: "2.5 LPA", p: 350, e: 450, r: 65, o: 420 }, "2021-22": { h: "5 LPA", a: "2.5 LPA", m: "2.2 LPA", p: 300, e: 400, r: 55, o: 350 }, "2020-21": { h: "4.5 LPA", a: "2.3 LPA", m: "2 LPA", p: 250, e: 360, r: 45, o: 290 } },
+            snscn: { "2024-25": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 } },
+            snscahs: { "2024-25": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 } },
+            snscphysio: { "2024-25": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 } },
+            snscphs: { "2024-25": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 } },
         };
+
+        const TREND_DATA = [
+            { y: "2025-26", p: "984", h: "₹53 LPA", a: "₹4.8 LPA", r: "150+", rate: "96%" },
+            { y: "2024-25", p: "2,271", h: "₹21 LPA", a: "₹4.5 LPA", r: "454+", rate: "94%" },
+            { y: "2023-24", p: "1,837", h: "₹19 LPA", a: "₹4.2 LPA", r: "380+", rate: "92%" },
+            { y: "2022-23", p: "1,749", h: "₹13.5 LPA", a: "₹4.0 LPA", r: "320+", rate: "90%" },
+            { y: "2021-22", p: "1,345", h: "₹12 LPA", a: "₹3.8 LPA", r: "280+", rate: "89%" },
+            { y: "2020-21", p: "1,664", h: "₹10 LPA", a: "₹3.5 LPA", r: "245+", rate: "90%" },
+        ];
 
         const SB = [
             { range: "₹20L+", snsct: 3, snsce: 2, drsnsrcas: 0, c: "#C41230" }, { range: "₹15-20L", snsct: 5, snsce: 3, drsnsrcas: 0, c: "#E63946" },
@@ -341,6 +362,9 @@
             const [catF, setCatF] = useState("all");
             const [search, setSearch] = useState("");
             const [tIdx, setTIdx] = useState(0);
+            const [sPage, setSPage] = useState(1);
+
+            const getBestYear = useCallback((id) => (id || "").toLowerCase() === 'snsct' || id === 'all' ? '2025-26' : '2024-25', []);
 
             // ═══ Dynamic Data State (initialized with hardcoded defaults) ═══
             const [colleges, setColleges] = useState(COLLEGES);
@@ -412,12 +436,13 @@
             }, [loadFromSheets]);
 
             useEffect(() => { const t = setInterval(() => setTIdx(p => (p + 1) % 8), 4500); return () => clearInterval(t) }, []);
-            useEffect(() => { setDept("All") }, [col]);
+            useEffect(() => { setDept("All"); setSPage(1); }, [col]);
+            useEffect(() => { setSPage(1); }, [yr, search, catF, dept]);
 
             // ═══ Computed values using dynamic state ═══
             const depts = col === "all" ? ["All"] : deptMap[col] || ["All"];
             const gs = useCallback(() => {
-                if (col === "all") { const tp = Object.keys(yearlyStats).reduce((a, k) => a + (yearlyStats[k][yr]?.p || 0), 0); const te = Object.keys(yearlyStats).reduce((a, k) => a + (yearlyStats[k][yr]?.e || 0), 0); const to = Object.keys(yearlyStats).reduce((a, k) => a + (yearlyStats[k][yr]?.o || 0), 0); return { p: tp, e: te, o: to, r: "555+", h: "₹53 LPA", a: "₹4.5 LPA", m: "₹7.8 LPA" }; }
+                if (col === "all") { const keys = Object.keys(yearlyStats); const tp = keys.reduce((a, k) => a + (yearlyStats[k][yr]?.p || 0), 0); const te = keys.reduce((a, k) => a + (yearlyStats[k][yr]?.e || 0), 0); const to = keys.reduce((a, k) => a + (yearlyStats[k][yr]?.o || 0), 0); const tr = keys.reduce((a, k) => a + (yearlyStats[k][yr]?.r || 0), 0); const hVals = keys.map(k => { const v = yearlyStats[k][yr]?.h; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; }); const maxH = Math.max(...hVals); const aVals = keys.map(k => { const v = yearlyStats[k][yr]?.a; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; }).filter(v => v > 0); const avgA = aVals.length ? (aVals.reduce((s, v) => s + v, 0) / aVals.length).toFixed(1) : "-"; const mVals = keys.map(k => { const v = yearlyStats[k][yr]?.m; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; }).filter(v => v > 0); const maxM = mVals.length ? Math.max(...mVals).toFixed(1) : "-"; return { p: tp, e: te, o: to, r: tr + "+", h: maxH ? "₹" + maxH + " LPA" : "-", a: avgA !== "-" ? "₹" + avgA + " LPA" : "-", m: maxM !== "-" ? "₹" + maxM + " LPA" : "-" }; }
                 const s = yearlyStats[col]?.[yr]; return s ? { p: s.p, e: s.e, o: s.o, r: s.r + "", h: s.h, a: s.a, m: s.m } : { p: 0, e: 1, o: 0, r: "0", h: "-", a: "-", m: "-" };
             }, [col, yr, yearlyStats]);
             const stats = gs(); const rate = Math.round((stats.p / stats.e) * 100);
@@ -493,6 +518,8 @@
         .fab-btn span { white-space: nowrap; font-size: 14px; font-weight: 600; font-family: 'Outfit'; opacity: 0; transition: opacity 0.2s ease; line-height: 50px; }
         .fab-btn:hover { width: 140px; }
         .fab-btn:hover span { opacity: 1; padding-right: 15px; }
+        .pbox{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:white;color:#444;border:1px solid #eee}
+        .pbox.on{background:${R};color:white;border-color:${R}}
       `}</style>
 
                     {/* Floating Action Buttons */}
@@ -517,8 +544,7 @@
                                 const newCol = e.target.value;
                                 setCol(newCol);
                                 setDept("All");
-                                const defaultY = (newCol || "").toLowerCase() === 'snsct' || newCol === 'all' ? '2025-26' : '2024-25';
-                                setYr(defaultY);
+                                setYr(getBestYear(newCol));
                             }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}>
                                 <option value="all">All Institutions</option>
                                 {colleges.map(c => <option key={c.id} value={c.id}>{c.short}</option>)}
@@ -547,8 +573,7 @@
                                 </div>
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 40 }}>
                                     {colleges.map((c, i) => {
-                                        const getDisplayYear = (id) => (id || "").toLowerCase() === 'snsct' ? '2025-26' : '2024-25';
-                                        const displayYear = getDisplayYear(c.id);
+                                        const displayYear = getBestYear(c.id);
                                         const s = yearlyStats[c.id]?.[displayYear] || { h: "-", p: 0, e: 1 };
                                         const hStr = s.h ? String(s.h) : "-";
                                         const highestVal = hStr.replace(/[^0-9.]/g, '');
@@ -708,7 +733,28 @@
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 28 }}>
                                     <StatBox v={stats.p.toLocaleString() + "+"} l="Students Placed" /><StatBox v={stats.h} l="Highest CTC" /><StatBox v={stats.a} l="Avg CTC" c="#333" /><StatBox v={stats.m} l="Median CTC" c="#333" /><StatBox v={stats.r} l="Recruiters" c="#4ECDC4" /><StatBox v={stats.o.toLocaleString() + "+"} l="Total Offers" c="#7FB069" /><StatBox v={rate + "%"} l="Placement Rate" c="#F7B267" />
                                 </div>
-                                <div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Year-over-Year Trend{col !== "all" ? ` — ${colleges.find(c => c.id === col)?.short}` : ""}</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Year</th><th>Placed</th><th>Highest</th><th>Avg</th><th>Recruiters</th><th>Rate</th></tr></thead><tbody>{YEARS.map(y => { if (col === "all") { const tp = Object.keys(yearlyStats).reduce((a, k) => a + (yearlyStats[k][y]?.p || 0), 0); const te = Object.keys(yearlyStats).reduce((a, k) => a + (yearlyStats[k][y]?.e || 0), 0); return <tr key={y} style={{ background: y === yr ? `${R}06` : "transparent" }}><td style={{ fontWeight: 600 }}>{y}</td><td>{tp.toLocaleString()}</td><td>—</td><td>—</td><td>—</td><td>{Math.round(tp / te * 100) || 0}%</td></tr> } const s = yearlyStats[col]?.[y]; if (!s) return null; return <tr key={y} style={{ background: y === yr ? `${R}06` : "transparent" }}><td style={{ fontWeight: 600 }}>{y}</td><td>{s.p.toLocaleString()}</td><td>{s.h}</td><td>{s.a}</td><td>{s.r}</td><td>{Math.round(s.p / s.e * 100) || 0}%</td></tr> })}</tbody></table></div></div>
+                                <div className="card" style={{ padding: 24, marginBottom: 20 }}>
+                                    <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Year-over-Year Trend</h3>
+                                    <div style={{ overflowX: "auto" }}>
+                                        <table className="tbl">
+                                            <thead>
+                                                <tr><th>Year</th><th>Placed</th><th>Highest</th><th>Avg</th><th>Recruiters</th><th>Rate</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                {TREND_DATA.map((row, i) => (
+                                                    <tr key={i} style={{ background: row.y === yr ? `${R}06` : "transparent" }}>
+                                                        <td style={{ fontWeight: 600 }}>{row.y}</td>
+                                                        <td>{row.p}</td>
+                                                        <td>{row.h}</td>
+                                                        <td>{row.a}</td>
+                                                        <td>{row.r}</td>
+                                                        <td>{row.rate}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                                 <div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Salary Distribution</h3>{salaryBands.map((b, i) => { const val = col === "all" ? (b.snsct + b.snsce + b.drsnsrcas) : (b[col] || 0); const mx = col === "all" ? 1500 : 800; return (<div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}><div style={{ width: 70, fontSize: 12, fontWeight: 700, fontFamily: "'Space Mono',monospace", color: "#555", flexShrink: 0 }}>{b.range}</div><div style={{ flex: 1, height: 24, background: "#f0f0f0", borderRadius: 4, overflow: "hidden" }}><div className="bar" style={{ width: `${Math.max((val / mx) * 100, 2)}%`, background: b.c, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8 }}><span style={{ fontSize: 10, fontWeight: 700, color: "white" }}>{val}</span></div></div></div>) })}</div>
                             </div>)}
 
@@ -716,9 +762,53 @@
 
                             {pg === "drives" && (<div><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}><h2 style={{ fontSize: 22, fontWeight: 800 }}>Company Visit History</h2><input className="srch" placeholder="Search company..." value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth: 250 }} /></div><div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>{["all", ...CATS].map(c => <button key={c} className={`pill ${catF === c ? "on" : ""}`} onClick={() => setCatF(c)}>{c === "all" ? "All" : c}</button>)}</div><div className="card" style={{ overflow: "auto", maxHeight: 600 }}><table className="tbl"><thead><tr><th>Company</th><th>Date</th><th>Package</th><th>Roles</th><th>Category</th><th>College</th><th>Dept</th><th>Status</th><th>Placed</th></tr></thead><tbody>{fv.map((v, i) => (<tr key={i}><td style={{ fontWeight: 600 }}>{v.co}</td><td style={{ fontSize: 12, color: "#888" }}>{v.dt}</td><td style={{ fontWeight: 600, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{v.pk}</td><td style={{ fontSize: 12, color: "#666" }}>{v.ro}</td><td><Badge bg={v.cat.includes("IT Prod") ? "#E3F2FD" : v.cat.includes("Core") ? "#FFF3E0" : v.cat.includes("Sales") ? "#F3E5F5" : "#E8F5E9"} fg={v.cat.includes("IT Prod") ? "#1565C0" : v.cat.includes("Core") ? "#E65100" : v.cat.includes("Sales") ? "#7B1FA2" : "#2E7D32"}>{v.cat}</Badge></td><td style={{ fontSize: 12 }}>{v.cl === "all" ? "All" : v.cl.toUpperCase()}</td><td style={{ fontSize: 12, color: "#888" }}>{v.dept}</td><td><Badge bg={v.st === "Completed" ? "#E8F5E9" : v.st.includes("Progress") ? "#FFF3E0" : "#E3F2FD"} fg={v.st === "Completed" ? "#2E7D32" : v.st.includes("Progress") ? "#E65100" : "#1565C0"}>{v.st}</Badge></td><td style={{ fontWeight: 600, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{v.sp || "—"}</td></tr>))}</tbody></table></div><div style={{ marginTop: 10, fontSize: 11, color: "#bbb" }}>{fv.length} drives shown</div></div>)}
 
-                            {pg === "salary" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Salary Analysis</h2><div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Package Distribution by College ({yr})</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Band</th><th>SNSCT</th><th>SNSCE</th><th>Dr.SNSRCAS</th><th>Total</th></tr></thead><tbody>{salaryBands.map((b, i) => <tr key={i}><td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td><td>{b.snsct}</td><td>{b.snsce}</td><td>{b.drsnsrcas}</td><td style={{ fontWeight: 700 }}>{b.snsct + b.snsce + b.drsnsrcas}</td></tr>)}</tbody></table></div></div><div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top Package Companies</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Company</th><th>Package</th><th>Year</th><th>College</th><th>Category</th></tr></thead><tbody>{[{ c: "ServiceNow", p: "₹32 LPA", y: "2023-24", cl: "SNSCT", ct: "IT Product" }, { c: "Juspay", p: "₹10-21 LPA", y: "2024-25", cl: "SNSCE", ct: "IT Product" }, { c: "Cadence", p: "₹15 LPA", y: "2023-24", cl: "SNSCT", ct: "Core (VLSI)" }, { c: "Zoho", p: "₹10-14 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Sobha", p: "₹13.5 LPA", y: "2023-24", cl: "SNSCT", ct: "Core" }, { c: "Amazon", p: "₹8-15 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "PayPal", p: "₹8-12 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Deloitte", p: "₹7-12 LPA", y: "2024-25", cl: "SNSCT", ct: "Consulting" }, { c: "Intellipaat", p: "₹9 LPA", y: "2024-25", cl: "SNSCT+SNSCE", ct: "IT Services" }, { c: "KAAR Tech", p: "₹6-9 LPA", y: "2024-25", cl: "SNSCT", ct: "SAP" }].map((r, i) => <tr key={i}><td style={{ fontWeight: 600 }}>{r.c}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace" }}>{r.p}</td><td>{r.y}</td><td>{r.cl}</td><td style={{ fontSize: 12, color: "#888" }}>{r.ct}</td></tr>)}</tbody></table></div></div></div>)}
+                            {pg === "salary" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Salary Analysis</h2><div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Package Distribution by College ({yr})</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Band</th><th>SNSCT</th>{yr !== "2025-26" && <th>SNSCE</th>}<th>Dr.SNSRCAS</th><th>Total</th></tr></thead><tbody>{salaryBands.map((b, i) => { const snsctVal = yr === "2025-26" ? b.snsct + b.snsce : b.snsct; const total = yr === "2025-26" ? (b.snsct + b.snsce + b.drsnsrcas) : (b.snsct + b.snsce + b.drsnsrcas); return <tr key={i}><td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td><td>{snsctVal}</td>{yr !== "2025-26" && <td>{b.snsce}</td>}<td>{b.drsnsrcas}</td><td style={{ fontWeight: 700 }}>{total}</td></tr> })}</tbody></table></div></div><div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top Package Companies</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Company</th><th>Package</th><th>Year</th><th>College</th><th>Category</th></tr></thead><tbody>{[{ c: "ServiceNow", p: "₹32 LPA", y: "2023-24", cl: "SNSCT", ct: "IT Product" }, { c: "Juspay", p: "₹10-21 LPA", y: "2024-25", cl: "SNSCE", ct: "IT Product" }, { c: "Cadence", p: "₹15 LPA", y: "2023-24", cl: "SNSCT", ct: "Core (VLSI)" }, { c: "Zoho", p: "₹10-14 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Sobha", p: "₹13.5 LPA", y: "2023-24", cl: "SNSCT", ct: "Core" }, { c: "Amazon", p: "₹8-15 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "PayPal", p: "₹8-12 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Deloitte", p: "₹7-12 LPA", y: "2024-25", cl: "SNSCT", ct: "Consulting" }, { c: "Intellipaat", p: "₹9 LPA", y: "2024-25", cl: "SNSCT+SNSCE", ct: "IT Services" }, { c: "KAAR Tech", p: "₹6-9 LPA", y: "2024-25", cl: "SNSCT", ct: "SAP" }].map((r, i) => <tr key={i}><td style={{ fontWeight: 600 }}>{r.c}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace" }}>{r.p}</td><td>{r.y}</td><td>{r.cl}</td><td style={{ fontSize: 12, color: "#888" }}>{r.ct}</td></tr>)}</tbody></table></div></div></div>)}
 
-                            {pg === "students" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Placed Students Directory</h2><p style={{ fontSize: 13, color: "#999", marginBottom: 20 }}>Student profiles with photo, LinkedIn, LeetCode, GitHub. Filterable by college, department, year.</p><div className="card" style={{ overflow: "auto" }}><table className="tbl"><thead><tr><th></th><th>Name</th><th>Dept</th><th>College</th><th>YOP</th><th>Company</th><th>CTC</th><th>Role</th><th>Profiles</th></tr></thead><tbody>{placed.map((s, i) => (<tr key={i}><td><div style={{ width: 30, height: 30, borderRadius: "50%", background: "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, overflow: "hidden" }}>{s.photo && s.photo.trim().startsWith("http") ? <img src={s.photo} alt={s.n} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerText = '👤'; }} /> : "👤"}</div></td><td style={{ fontWeight: 600 }}>{s.n}</td><td style={{ fontSize: 12 }}>{s.dept || "—"}</td><td style={{ fontSize: 12 }}>{s.c}</td><td style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>{s.yop || "—"}</td><td style={{ fontWeight: 600 }}>{s.co}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{s.ctc ? (s.ctc.includes("₹") || s.ctc.includes("LPA") || isNaN(parseFloat(s.ctc)) ? s.ctc : `₹${s.ctc} LPA`) : "—"}</td><td style={{ fontSize: 12, color: "#666" }}>{s.r || "—"}</td><td style={{ fontSize: 11, display: "flex", gap: 10, alignItems: "center" }}>{s.li && s.li.trim() !== "" ? <a href={s.li} target="_blank" style={{ color: "#0A66C2", cursor: "pointer", textDecoration: "none", fontSize: 16 }} title="LinkedIn"><i className="fab fa-linkedin"></i></a> : <span style={{ color: "#ccc", fontSize: 16 }}><i className="fab fa-linkedin"></i></span>} {s.gh && s.gh.trim() !== "" ? <a href={s.gh} target="_blank" style={{ color: "#333", cursor: "pointer", textDecoration: "none", fontSize: 16 }} title="GitHub"><i className="fab fa-github"></i></a> : <span style={{ color: "#ccc", fontSize: 16 }}><i className="fab fa-github"></i></span>} {s.lc && s.lc.trim() !== "" ? <a href={s.lc} target="_blank" style={{ color: "#F89F1B", cursor: "pointer", textDecoration: "none", display: "flex", alignItems: "center" }} title="LeetCode"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.055 5.055 0 0 0-3.588-1.419c-1.328 0-2.61.545-3.55 1.5l-4.296 4.352c-.956.956-1.48 2.23-1.48 3.585 0 1.341.524 2.615 1.48 3.57l4.314 4.347c.94.94 2.222 1.487 3.55 1.487 1.314 0 2.583-.547 3.535-1.487l2.645-2.557c.514-.516.496-1.367-.039-1.901-.535-.536-1.386-.554-1.9-.039zM20.811 13.01H10.666c-.702 0-1.27.604-1.27 1.346s.568 1.346 1.27 1.346h10.145c.701 0 1.27-.604 1.27-1.346s-.569-1.346-1.27-1.346z" /></svg></a> : <span style={{ color: "#ccc", display: "flex", alignItems: "center" }}><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.055 5.055 0 0 0-3.588-1.419c-1.328 0-2.61.545-3.55 1.5l-4.296 4.352c-.956.956-1.48 2.23-1.48 3.585 0 1.341.524 2.615 1.48 3.57l4.314 4.347c.94.94 2.222 1.487 3.55 1.487 1.314 0 2.583-.547 3.535-1.487l2.645-2.557c.514-.516.496-1.367-.039-1.901-.535-.536-1.386-.554-1.9-.039zM20.811 13.01H10.666c-.702 0-1.27.604-1.27 1.346s.568 1.346 1.27 1.346h10.145c.701 0 1.27-.604 1.27-1.346s-.569-1.346-1.27-1.346z" /></svg></span>}</td></tr>))}</tbody></table></div></div>)}
+                            {pg === "students" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Placed Students Directory</h2><p style={{ fontSize: 13, color: "#999", marginBottom: 20 }}>Student profiles with photo, LinkedIn, LeetCode, GitHub. Filterable by college, department, year.</p>
+                                <div className="card" style={{ overflow: "auto" }}>
+                                    <table className="tbl">
+                                        <thead><tr><th></th><th>Name</th><th>Dept</th><th>College</th><th>YOP</th><th>Company</th><th>Role</th><th>Profiles</th></tr></thead>
+                                        <tbody>
+                                            {placed.slice((sPage - 1) * 50, sPage * 50).map((s, i) => (
+                                                <tr key={i}>
+                                                    <td><div style={{ width: 30, height: 30, borderRadius: "50%", background: "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, overflow: "hidden" }}>{s.photo && s.photo.trim().startsWith("http") ? <img src={s.photo} alt={s.n} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerText = '👤'; }} /> : "👤"}</div></td>
+                                                    <td style={{ fontWeight: 600 }}>{s.n}</td>
+                                                    <td style={{ fontSize: 12 }}>{s.dept || "—"}</td>
+                                                    <td style={{ fontSize: 12 }}>{s.c}</td>
+                                                    <td style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>{s.yop || "—"}</td>
+                                                    <td style={{ fontWeight: 600 }}>{s.co}</td>
+                                                    <td style={{ fontSize: 12, color: "#666" }}>{s.r || "—"}</td>
+                                                    <td style={{ fontSize: 11, display: "flex", gap: 10, alignItems: "center" }}>
+                                                        {s.li && s.li.trim() !== "" ? <a href={s.li} target="_blank" style={{ color: "#0A66C2", cursor: "pointer", textDecoration: "none", fontSize: 16 }} title="LinkedIn"><i className="fab fa-linkedin"></i></a> : <span style={{ color: "#ccc", fontSize: 16 }}><i className="fab fa-linkedin"></i></span>}
+                                                        {s.gh && s.gh.trim() !== "" ? <a href={s.gh} target="_blank" style={{ color: "#333", cursor: "pointer", textDecoration: "none", fontSize: 16 }} title="GitHub"><i className="fab fa-github"></i></a> : <span style={{ color: "#ccc", fontSize: 16 }}><i className="fab fa-github"></i></span>}
+                                                        {s.lc && s.lc.trim() !== "" ? <a href={s.lc} target="_blank" style={{ color: "#F89F1B", cursor: "pointer", textDecoration: "none", display: "flex", alignItems: "center" }} title="LeetCode"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.055 5.055 0 0 0-3.588-1.419c-1.328 0-2.61.545-3.55 1.5l-4.296 4.352c-.956.956-1.48 2.23-1.48 3.585 0 1.341.524 2.615 1.48 3.57l4.314 4.347c.94.94 2.222 1.487 3.55 1.487 1.314 0 2.583-.547 3.535-1.487l2.645-2.557c.514-.516.496-1.367-.039-1.901-.535-.536-1.386-.554-1.9-.039zM20.811 13.01H10.666c-.702 0-1.27.604-1.27 1.346s.568 1.346 1.27 1.346h10.145c.701 0 1.27-.604 1.27-1.346s-.569-1.346-1.27-1.346z" /></svg></a> : <span style={{ color: "#ccc", display: "flex", alignItems: "center" }}><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.055 5.055 0 0 0-3.588-1.419c-1.328 0-2.61.545-3.55 1.5l-4.296 4.352c-.956.956-1.48 2.23-1.48 3.585 0 1.341.524 2.615 1.48 3.57l4.314 4.347c.94.94 2.222 1.487 3.55 1.487 1.314 0 2.583-.547 3.535-1.487l2.645-2.557c.514-.516.496-1.367-.039-1.901-.535-.536-1.386-.554-1.9-.039zM20.811 13.01H10.666c-.702 0-1.27.604-1.27 1.346s.568 1.346 1.27 1.346h10.145c.701 0 1.27-.604 1.27-1.346s-.569-1.346-1.27-1.346z" /></svg></span>}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {placed.length > 50 && (() => {
+                                    const totalP = Math.ceil(placed.length / 50);
+                                    const pages = [];
+                                    if (totalP <= 7) { for (let i = 1; i <= totalP; i++) pages.push(i); }
+                                    else {
+                                        pages.push(1);
+                                        if (sPage > 3) pages.push("...");
+                                        const start = Math.max(2, sPage - 1), end = Math.min(totalP - 1, sPage + 1);
+                                        for (let i = start; i <= end; i++) { if (!pages.includes(i)) pages.push(i); }
+                                        if (sPage < totalP - 2) pages.push("...");
+                                        if (!pages.includes(totalP)) pages.push(totalP);
+                                    }
+                                    return (
+                                        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 32 }}>
+                                            <button onClick={() => setSPage(p => Math.max(1, p - 1))} disabled={sPage === 1} style={{ background: "none", border: "none", color: sPage === 1 ? "#ccc" : "#444", fontWeight: 600, fontSize: 13, cursor: sPage === 1 ? "default" : "pointer", padding: "0 10px" }}>Prev</button>
+                                            {pages.map((p, i) => p === "..." ? <span key={i} style={{ color: "#999", padding: "0 4px" }}>...</span> : <div key={i} className={`pbox hlift ${sPage === p ? "on" : ""}`} onClick={() => setSPage(p)}>{p}</div>)}
+                                            <button onClick={() => setSPage(p => Math.min(totalP, p + 1))} disabled={sPage === totalP} style={{ background: "none", border: "none", color: sPage === totalP ? "#ccc" : "#444", fontWeight: 600, fontSize: 13, cursor: sPage === totalP ? "default" : "pointer", padding: "0 10px" }}>Next</button>
+                                        </div>
+                                    );
+                                })()}
+                            </div>)}
 
                             {pg === "training" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Training Programs</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginBottom: 28 }}>{Object.values(trainingData).map((t, i) => (<div key={i} className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, color: R, marginBottom: 4 }}>{t.t}</h3><div style={{ fontSize: 11, color: "#999", fontWeight: 600, marginBottom: 8 }}>Partner: {t.p}</div><p style={{ fontSize: 12, color: "#666", lineHeight: 1.6, marginBottom: 12 }}>{t.d}</p><div style={{ display: "flex", flexDirection: "column", gap: 5 }}>{t.m.map((m, j) => <div key={j} style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ width: 4, height: 4, borderRadius: "50%", background: R, flexShrink: 0 }} /><span style={{ fontSize: 12, color: "#555" }}>{m}</span></div>)}</div></div>))}</div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Training Platforms</h3><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10, marginBottom: 28 }}>{platformData.map((p, i) => <div key={i} className="card" style={{ padding: 14 }}><div style={{ fontSize: 13, fontWeight: 700 }}>{p.n}</div><div style={{ fontSize: 11, color: "#888" }}>{p.u}</div></div>)}</div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Global Certifications — 5,200+</h3><div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}><div className="card" style={{ padding: 20, flex: "1 1 340px" }}><h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>IT Certifications</h4>{certData.it.map((c, i) => <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #f5f5f5" }}><span style={{ fontSize: 12 }}>{c.n}</span><span style={{ fontSize: 13, fontWeight: 800, color: c.cl, fontFamily: "'Space Mono',monospace" }}>{c.c.toLocaleString()}</span></div>)}</div><div className="card" style={{ padding: 20, flex: "1 1 240px" }}><h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Core Certifications</h4>{certData.core.map((c, i) => <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #f5f5f5" }}><span style={{ fontSize: 12 }}>{c.n}</span><span style={{ fontSize: 13, fontWeight: 800, color: c.cl, fontFamily: "'Space Mono',monospace" }}>{c.c}</span></div>)}</div></div></div>)}
 
