@@ -278,7 +278,15 @@
             { range: "₹2-3L", snsct: 500, snsce: 200, drsnsrcas: 150, c: "#45B7D1" },
         ];
 
-        const CATS = ["IT Product", "IT Services", "Core Engineering", "Sales & Marketing", "Analytics & Data", "Management & Consulting"];
+        // CATS: each entry has a display label and an array of keywords to match against sheet data
+        const CATS = [
+            { label: "IT Product", keys: ["IT Product", "IT Prod", "Product"] },
+            { label: "IT Services", keys: ["IT Services", "IT Service", "IT", "ITeS"] },
+            { label: "Core Engineering", keys: ["Core Engineering", "Core", "Engineering"] },
+            { label: "Sales & Marketing", keys: ["Sales & Marketing", "Sales", "Marketing"] },
+            { label: "Analytics & Data", keys: ["Analytics & Data", "Analytics", "Data"] },
+            { label: "Management & Consulting", keys: ["Management & Consulting", "Management", "Consulting"] },
+        ];
 
         const CV = [
             { co: "Juspay Technologies", dt: "Apr 2025", pk: "₹10-21 LPA", ro: "SDE, Backend", cat: "IT Product", cl: "snsce", st: "In Progress", sp: null, dept: "CSE" },
@@ -486,7 +494,12 @@
 
             const fv = companyVisits.filter(v => {
                 const matchCol = col === "all" || v.cl === col || v.cl === "all";
-                const matchCat = catF === "all" || v.cat === catF;
+                const matchCat = catF === "all" || (() => {
+                    const catObj = CATS.find(c => c.label === catF);
+                    if (!catObj) return false;
+                    const vCat = (v.cat || "").toLowerCase().trim();
+                    return catObj.keys.some(k => vCat.includes(k.toLowerCase()));
+                })();
                 const matchDept = dept === "All" || v.dept === dept || v.dept === "Multiple";
                 const matchSearch = search === "" || v.co.toLowerCase().includes(search.toLowerCase());
                 const vYear = v.ay || getAcademicYear(v.dt);
@@ -819,7 +832,7 @@
                                     <input className="srch" placeholder="Search company..." value={search} onChange={e => { setSearch(e.target.value); setVPage(1); }} style={{ maxWidth: 250 }} />
                                 </div>
                                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-                                    {["all", ...CATS].map(c => <button key={c} className={`pill ${catF === c ? "on" : ""}`} onClick={() => { setCatF(c); setVPage(1); }}>{c === "all" ? "All" : c}</button>)}
+                                    {["all", ...CATS.map(c => c.label)].map(c => <button key={c} className={`pill ${catF === c ? "on" : ""}`} onClick={() => { setCatF(c); setVPage(1); }}>{c === "all" ? "All" : c}</button>)}
                                 </div>
                                 <div className="card" style={{ minHeight: 600, display: "flex", flexDirection: "column" }}>
                                     <div style={{ flex: 1, overflow: "auto" }}>
