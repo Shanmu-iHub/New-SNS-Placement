@@ -454,6 +454,29 @@
             };
             const stats = sy(yr); const rate = parseInt(stats.rate);
 
+            const overallStats = (() => {
+                const ks = Object.keys(yearlyStats);
+                let tp = 0, tr = 0, to = 0, te = 0, maxH = 0;
+                let avL = [], mvL = [];
+                ks.forEach(k => {
+                    YEARS.forEach(y => {
+                        const s = yearlyStats[k][y];
+                        if (s) {
+                            tp += (s.p || 0); tr += (s.r || 0); to += (s.o || 0); te += (s.e || 0);
+                            const h = parseFloat(String(s.h).replace(/[^0-9.]/g, "")) || 0;
+                            if (h > maxH) maxH = h;
+                            const a = parseFloat(String(s.a).replace(/[^0-9.]/g, "")) || 0;
+                            if (a > 0) avL.push(a);
+                            const m = parseFloat(String(s.m).replace(/[^0-9.]/g, "")) || 0;
+                            if (m > 0) mvL.push(m);
+                        }
+                    });
+                });
+                const agA = avL.length ? (avL.reduce((s, v) => s + v, 0) / avL.length).toFixed(1) : "-";
+                const agM = mvL.length ? (mvL.reduce((s, v) => s + v, 0) / mvL.length).toFixed(1) : "-";
+                return { p: tp, o: to, r: tr + "+", h: maxH ? "₹" + maxH + " LPA" : "-", a: agA !== "-" ? "₹" + agA + " LPA" : "-", m: agM !== "-" ? "₹" + agM + " LPA" : "-" };
+            })();
+
             const fv = companyVisits.filter(v => {
                 const matchCol = col === "all" || v.cl === col || v.cl === "all";
                 const matchCat = catF === "all" || v.cat === catF;
@@ -630,7 +653,7 @@
                                     })}
                                 </div>
                                 <div style={{ display: "flex", gap: 32, flexWrap: "wrap", paddingTop: 24, borderTop: "1px solid rgba(255,255,255,.06)" }}>
-                                    {[{ v: "₹53 LPA", l: "Highest Package" }, { v: "3,350+", l: "Students Placed" }, { v: "555+", l: "Recruiters" }, { v: "₹7.8 LPA", l: "Median (SNSCE)" }, { v: "5,200+", l: "Certifications" }, { v: "6,500+", l: "AI Trained" }].map((s, i) => (<div key={i} style={{ textAlign: "center", flex: "1 1 100px" }}><div style={{ fontSize: 22, fontWeight: 800, color: "white", fontFamily: "'Space Mono',monospace", letterSpacing: "-1px" }}>{s.v}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,.3)", textTransform: "uppercase", letterSpacing: ".8px", marginTop: 2 }}>{s.l}</div></div>))}
+                                    {[{ v: overallStats.h, l: "Highest Package" }, { v: overallStats.p.toLocaleString() + "+", l: "Students Placed" }, { v: overallStats.o.toLocaleString() + "+", l: "Total Offers" }, { v: overallStats.r, l: "Recruiters" }, { v: overallStats.m, l: "Median CTC" }, { v: ([...certData.it, ...certData.core].reduce((ss, c) => ss + (c.c || 0), 0)).toLocaleString() + "+", l: "Certifications" }].map((s, i) => (<div key={i} style={{ textAlign: "center", flex: "1 1 100px" }}><div style={{ fontSize: 22, fontWeight: 800, color: "white", fontFamily: "'Space Mono',monospace", letterSpacing: "-1px" }}>{s.v}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,.3)", textTransform: "uppercase", letterSpacing: ".8px", marginTop: 2 }}>{s.l}</div></div>))}
                                 </div>
                             </div>
                         </section>
