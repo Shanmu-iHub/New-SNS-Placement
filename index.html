@@ -478,7 +478,17 @@
                     s.c.toLowerCase() === col;
                 const matchD = dept === "All" || !s.dept || s.dept.toLowerCase() === "multiple" || s.dept.toLowerCase() === dept.toLowerCase();
                 const matchY = yr === "All" || !s.yop || yr.includes(s.yop.toString().slice(-2)) || s.yop.toString() === yr;
-                return matchC && matchD && matchY;
+
+                const q = (search || "").toLowerCase().trim();
+                const matchS = q === "" ||
+                    (s.n || "").toLowerCase().includes(q) ||
+                    (s.dept || "").toLowerCase().includes(q) ||
+                    (s.yop || "").toString().toLowerCase().includes(q) ||
+                    (s.co || "").toLowerCase().includes(q) ||
+                    (s.r || "").toLowerCase().includes(q) ||
+                    (s.c || "").toLowerCase().includes(q);
+
+                return matchC && matchD && matchY && matchS;
             });
 
             return (
@@ -767,7 +777,17 @@
 
                             {pg === "salary" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Salary Analysis</h2><div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Package Distribution by College ({yr})</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Band</th><th>SNSCT</th>{yr !== "2025-26" && <th>SNSCE</th>}<th>Dr.SNSRCAS</th><th>Total</th></tr></thead><tbody>{salaryBands.map((b, i) => { const snsctVal = yr === "2025-26" ? b.snsct + b.snsce : b.snsct; const total = yr === "2025-26" ? (b.snsct + b.snsce + b.drsnsrcas) : (b.snsct + b.snsce + b.drsnsrcas); return <tr key={i}><td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td><td>{snsctVal}</td>{yr !== "2025-26" && <td>{b.snsce}</td>}<td>{b.drsnsrcas}</td><td style={{ fontWeight: 700 }}>{total}</td></tr> })}</tbody></table></div></div><div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top Package Companies</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Company</th><th>Package</th><th>Year</th><th>College</th><th>Category</th></tr></thead><tbody>{[{ c: "ServiceNow", p: "₹32 LPA", y: "2023-24", cl: "SNSCT", ct: "IT Product" }, { c: "Juspay", p: "₹10-21 LPA", y: "2024-25", cl: "SNSCE", ct: "IT Product" }, { c: "Cadence", p: "₹15 LPA", y: "2023-24", cl: "SNSCT", ct: "Core (VLSI)" }, { c: "Zoho", p: "₹10-14 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Sobha", p: "₹13.5 LPA", y: "2023-24", cl: "SNSCT", ct: "Core" }, { c: "Amazon", p: "₹8-15 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "PayPal", p: "₹8-12 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Deloitte", p: "₹7-12 LPA", y: "2024-25", cl: "SNSCT", ct: "Consulting" }, { c: "Intellipaat", p: "₹9 LPA", y: "2024-25", cl: "SNSCT+SNSCE", ct: "IT Services" }, { c: "KAAR Tech", p: "₹6-9 LPA", y: "2024-25", cl: "SNSCT", ct: "SAP" }].map((r, i) => <tr key={i}><td style={{ fontWeight: 600 }}>{r.c}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace" }}>{r.p}</td><td>{r.y}</td><td>{r.cl}</td><td style={{ fontSize: 12, color: "#888" }}>{r.ct}</td></tr>)}</tbody></table></div></div></div>)}
 
-                            {pg === "students" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Placed Students Directory</h2><p style={{ fontSize: 13, color: "#999", marginBottom: 20 }}>Student profiles with photo, LinkedIn, LeetCode, GitHub. Filterable by college, department, year.</p>
+                            {pg === "students" && (<div>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+                                    <div>
+                                        <h2 style={{ fontSize: 22, fontWeight: 800 }}>Placed Students Directory</h2>
+                                        <p style={{ fontSize: 13, color: "#999" }}>Profiles with LinkedIn, LeetCode, GitHub. Filterable by college, dept, year.</p>
+                                    </div>
+                                    <div style={{ position: "relative", maxWidth: 320, width: "100%" }}>
+                                        <input className="srch" placeholder="Search name, dept, year, company..." value={search} onChange={e => setSearch(e.target.value)} />
+                                        <i className="fas fa-search" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#ccc", fontSize: 13 }}></i>
+                                    </div>
+                                </div>
                                 <div className="card" style={{ overflow: "auto" }}>
                                     <table className="tbl">
                                         <thead><tr><th></th><th>Name</th><th>Dept</th><th>College</th><th>YOP</th><th>Company</th><th>Role</th><th>Profiles</th></tr></thead>
