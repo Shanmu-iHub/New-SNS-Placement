@@ -443,12 +443,14 @@
                     const to = ks.reduce((a, k) => a + (yearlyStats[k][y]?.o || 0), 0);
                     const hv = ks.map(k => { const v = yearlyStats[k][y]?.h; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; });
                     const av = ks.map(k => { const v = yearlyStats[k][y]?.a; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; }).filter(v => v > 0);
+                    const mv = ks.map(k => { const v = yearlyStats[k][y]?.m; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; }).filter(v => v > 0);
                     const mx = Math.max(...hv);
                     const ag = av.length ? (av.reduce((s, v) => s + v, 0) / av.length).toFixed(1) : "-";
-                    return { p: tp, e: te, o: to, r: tr + "+", h: mx ? "₹" + mx + " LPA" : "-", a: ag !== "-" ? "₹" + ag + " LPA" : "-", rate: te ? Math.round((tp / te) * 100) + "%" : "0%" };
+                    const mg = mv.length ? (mv.reduce((s, v) => s + v, 0) / mv.length).toFixed(1) : "-";
+                    return { p: tp, e: te, o: to, r: tr + "+", h: mx ? "₹" + mx + " LPA" : "-", a: ag !== "-" ? "₹" + ag + " LPA" : "-", m: mg !== "-" ? "₹" + mg + " LPA" : "-", rate: te ? Math.round((tp / te) * 100) + "%" : "0%" };
                 }
-                const s = yearlyStats[col]?.[y] || { h: "-", a: "-", p: 0, e: 1, r: 0 };
-                return { p: s.p, e: s.e, o: s.o, r: s.r + "", h: s.h, a: s.a, rate: Math.round((s.p / s.e) * 100) + "%" };
+                const s = yearlyStats[col]?.[y] || { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 };
+                return { p: s.p, e: s.e, o: s.o, r: s.r + "", h: s.h, a: s.a, m: s.m, rate: Math.round((s.p / s.e) * 100) + "%" };
             };
             const stats = sy(yr); const rate = parseInt(stats.rate);
 
