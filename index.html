@@ -472,7 +472,10 @@
             ) : null;
 
             const placed = placedData.filter(s => {
-                const matchC = col === "all" || !s.c || s.c.toLowerCase().includes("all sns") || s.c.toLowerCase() === colleges.find(c => c.id === col)?.short.toLowerCase() || s.c.toLowerCase() === col;
+                const collegeObj = col !== "all" ? colleges.find(c => c.id === col) : null;
+                const matchC = col === "all" || !s.c || s.c.toLowerCase().includes("all sns") ||
+                    (collegeObj && s.c.toLowerCase() === (collegeObj.short || "").toLowerCase()) ||
+                    s.c.toLowerCase() === col;
                 const matchD = dept === "All" || !s.dept || s.dept.toLowerCase() === "multiple" || s.dept.toLowerCase() === dept.toLowerCase();
                 const matchY = yr === "All" || !s.yop || yr.includes(s.yop.toString().slice(-2)) || s.yop.toString() === yr;
                 return matchC && matchD && matchY;
@@ -769,19 +772,19 @@
                                     <table className="tbl">
                                         <thead><tr><th></th><th>Name</th><th>Dept</th><th>College</th><th>YOP</th><th>Company</th><th>Role</th><th>Profiles</th></tr></thead>
                                         <tbody>
-                                            {placed.slice((sPage - 1) * 50, sPage * 50).map((s, i) => (
-                                                <tr key={i}>
-                                                    <td><div style={{ width: 30, height: 30, borderRadius: "50%", background: "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, overflow: "hidden" }}>{s.photo && s.photo.trim().startsWith("http") ? <img src={s.photo} alt={s.n} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerText = '👤'; }} /> : "👤"}</div></td>
-                                                    <td style={{ fontWeight: 600 }}>{s.n}</td>
-                                                    <td style={{ fontSize: 12 }}>{s.dept || "—"}</td>
-                                                    <td style={{ fontSize: 12 }}>{s.c}</td>
-                                                    <td style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>{s.yop || "—"}</td>
-                                                    <td style={{ fontWeight: 600 }}>{s.co}</td>
-                                                    <td style={{ fontSize: 12, color: "#666" }}>{s.r || "—"}</td>
+                                            {placed.slice(Math.max(0, (sPage - 1) * 50), sPage * 50).map((s, i) => (
+                                                <tr key={`${s.n || ""}-${i}`}>
+                                                    <td><div style={{ width: 30, height: 30, borderRadius: "50%", background: "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, overflow: "hidden" }}>{s && s.photo && typeof s.photo === 'string' && s.photo.trim().startsWith("http") ? <img src={s.photo} alt={s.n || "Student"} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerText = '👤'; }} /> : "👤"}</div></td>
+                                                    <td style={{ fontWeight: 600 }}>{s && s.n ? s.n : "—"}</td>
+                                                    <td style={{ fontSize: 12 }}>{s && s.dept ? s.dept : "—"}</td>
+                                                    <td style={{ fontSize: 12 }}>{s && s.c ? s.c : "—"}</td>
+                                                    <td style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>{s && s.yop ? s.yop : "—"}</td>
+                                                    <td style={{ fontWeight: 600 }}>{s && s.co ? s.co : "—"}</td>
+                                                    <td style={{ fontSize: 12, color: "#666" }}>{s && s.r ? s.r : "—"}</td>
                                                     <td style={{ fontSize: 11, display: "flex", gap: 10, alignItems: "center" }}>
-                                                        {s.li && s.li.trim() !== "" ? <a href={s.li} target="_blank" style={{ color: "#0A66C2", cursor: "pointer", textDecoration: "none", fontSize: 16 }} title="LinkedIn"><i className="fab fa-linkedin"></i></a> : <span style={{ color: "#ccc", fontSize: 16 }}><i className="fab fa-linkedin"></i></span>}
-                                                        {s.gh && s.gh.trim() !== "" ? <a href={s.gh} target="_blank" style={{ color: "#333", cursor: "pointer", textDecoration: "none", fontSize: 16 }} title="GitHub"><i className="fab fa-github"></i></a> : <span style={{ color: "#ccc", fontSize: 16 }}><i className="fab fa-github"></i></span>}
-                                                        {s.lc && s.lc.trim() !== "" ? <a href={s.lc} target="_blank" style={{ color: "#F89F1B", cursor: "pointer", textDecoration: "none", display: "flex", alignItems: "center" }} title="LeetCode"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.055 5.055 0 0 0-3.588-1.419c-1.328 0-2.61.545-3.55 1.5l-4.296 4.352c-.956.956-1.48 2.23-1.48 3.585 0 1.341.524 2.615 1.48 3.57l4.314 4.347c.94.94 2.222 1.487 3.55 1.487 1.314 0 2.583-.547 3.535-1.487l2.645-2.557c.514-.516.496-1.367-.039-1.901-.535-.536-1.386-.554-1.9-.039zM20.811 13.01H10.666c-.702 0-1.27.604-1.27 1.346s.568 1.346 1.27 1.346h10.145c.701 0 1.27-.604 1.27-1.346s-.569-1.346-1.27-1.346z" /></svg></a> : <span style={{ color: "#ccc", display: "flex", alignItems: "center" }}><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.055 5.055 0 0 0-3.588-1.419c-1.328 0-2.61.545-3.55 1.5l-4.296 4.352c-.956.956-1.48 2.23-1.48 3.585 0 1.341.524 2.615 1.48 3.57l4.314 4.347c.94.94 2.222 1.487 3.55 1.487 1.314 0 2.583-.547 3.535-1.487l2.645-2.557c.514-.516.496-1.367-.039-1.901-.535-.536-1.386-.554-1.9-.039zM20.811 13.01H10.666c-.702 0-1.27.604-1.27 1.346s.568 1.346 1.27 1.346h10.145c.701 0 1.27-.604 1.27-1.346s-.569-1.346-1.27-1.346z" /></svg></span>}
+                                                        {s.li && typeof s.li === 'string' && s.li.trim() !== "" ? <a href={s.li} target="_blank" style={{ color: "#0A66C2", cursor: "pointer", textDecoration: "none", fontSize: 16 }} title="LinkedIn"><i className="fab fa-linkedin"></i></a> : <span style={{ color: "#ccc", fontSize: 16 }}><i className="fab fa-linkedin"></i></span>}
+                                                        {s.gh && typeof s.gh === 'string' && s.gh.trim() !== "" ? <a href={s.gh} target="_blank" style={{ color: "#333", cursor: "pointer", textDecoration: "none", fontSize: 16 }} title="GitHub"><i className="fab fa-github"></i></a> : <span style={{ color: "#ccc", fontSize: 16 }}><i className="fab fa-github"></i></span>}
+                                                        {s.lc && typeof s.lc === 'string' && s.lc.trim() !== "" ? <a href={s.lc} target="_blank" style={{ color: "#F89F1B", cursor: "pointer", textDecoration: "none", display: "flex", alignItems: "center" }} title="LeetCode"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.055 5.055 0 0 0-3.588-1.419c-1.328 0-2.61.545-3.55 1.5l-4.296 4.352c-.956.956-1.48 2.23-1.48 3.585 0 1.341.524 2.615 1.48 3.57l4.314 4.347c.94.94 2.222 1.487 3.55 1.487 1.314 0 2.583-.547 3.535-1.487l2.645-2.557c.514-.516.496-1.367-.039-1.901-.535-.536-1.386-.554-1.9-.039zM20.811 13.01H10.666c-.702 0-1.27.604-1.27 1.346s.568 1.346 1.27 1.346h10.145c.701 0 1.27-.604 1.27-1.346s-.569-1.346-1.27-1.346z" /></svg></a> : <span style={{ color: "#ccc", display: "flex", alignItems: "center" }}><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.102 17.93l-2.697 2.607c-.466.467-1.111.662-1.823.662s-1.357-.195-1.824-.662l-4.332-4.363c-.467-.467-.702-1.15-.702-1.863s.235-1.357.702-1.824l4.319-4.38c.467-.467 1.125-.645 1.837-.645s1.357.195 1.823.662l2.697 2.606c.514.515 1.365.497 1.9-.038.535-.536.553-1.387.039-1.901l-2.609-2.636a5.055 5.055 0 0 0-3.588-1.419c-1.328 0-2.61.545-3.55 1.5l-4.296 4.352c-.956.956-1.48 2.23-1.48 3.585 0 1.341.524 2.615 1.48 3.57l4.314 4.347c.94.94 2.222 1.487 3.55 1.487 1.314 0 2.583-.547 3.535-1.487l2.645-2.557c.514-.516.496-1.367-.039-1.901-.535-.536-1.386-.554-1.9-.039zM20.811 13.01H10.666c-.702 0-1.27.604-1.27 1.346s.568 1.346 1.27 1.346h10.145c.701 0 1.27-.604 1.27-1.346s-.569-1.346-1.27-1.346z" /></svg></span>}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -789,22 +792,31 @@
                                     </table>
                                 </div>
                                 {placed.length > 50 && (() => {
-                                    const totalP = Math.ceil(placed.length / 50);
+                                    const totalP = Math.max(1, Math.ceil(placed.length / 50));
                                     const pages = [];
-                                    if (totalP <= 7) { for (let i = 1; i <= totalP; i++) pages.push(i); }
-                                    else {
+                                    const currentP = Math.min(sPage, totalP);
+
+                                    if (totalP <= 10) {
+                                        for (let i = 1; i <= totalP; i++) pages.push(i);
+                                    } else {
                                         pages.push(1);
-                                        if (sPage > 3) pages.push("...");
-                                        const start = Math.max(2, sPage - 1), end = Math.min(totalP - 1, sPage + 1);
-                                        for (let i = start; i <= end; i++) { if (!pages.includes(i)) pages.push(i); }
-                                        if (sPage < totalP - 2) pages.push("...");
+                                        if (currentP > 4) pages.push("...");
+
+                                        let starts = currentP <= 4 ? 2 : Math.max(2, currentP - 2);
+                                        let ends = currentP <= 4 ? 5 : Math.min(totalP - 1, currentP + 2);
+
+                                        if (currentP >= totalP - 3) { starts = totalP - 4; ends = totalP - 1; }
+
+                                        for (let i = starts; i <= ends; i++) { if (!pages.includes(i)) pages.push(i); }
+
+                                        if (currentP < totalP - 3) pages.push("...");
                                         if (!pages.includes(totalP)) pages.push(totalP);
                                     }
                                     return (
                                         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 32 }}>
-                                            <button onClick={() => setSPage(p => Math.max(1, p - 1))} disabled={sPage === 1} style={{ background: "none", border: "none", color: sPage === 1 ? "#ccc" : "#444", fontWeight: 600, fontSize: 13, cursor: sPage === 1 ? "default" : "pointer", padding: "0 10px" }}>Prev</button>
-                                            {pages.map((p, i) => p === "..." ? <span key={i} style={{ color: "#999", padding: "0 4px" }}>...</span> : <div key={i} className={`pbox hlift ${sPage === p ? "on" : ""}`} onClick={() => setSPage(p)}>{p}</div>)}
-                                            <button onClick={() => setSPage(p => Math.min(totalP, p + 1))} disabled={sPage === totalP} style={{ background: "none", border: "none", color: sPage === totalP ? "#ccc" : "#444", fontWeight: 600, fontSize: 13, cursor: sPage === totalP ? "default" : "pointer", padding: "0 10px" }}>Next</button>
+                                            <button onClick={() => setSPage(p => Math.max(1, p - 1))} disabled={sPage <= 1} style={{ background: "none", border: "none", color: sPage <= 1 ? "#ccc" : "#444", fontWeight: 600, fontSize: 13, cursor: sPage <= 1 ? "default" : "pointer", padding: "0 10px" }}>Prev</button>
+                                            {pages.map((p, i) => p === "..." ? <span key={`sep-${i}`} style={{ color: "#999", padding: "0 4px" }}>...</span> : <div key={`p-${p}`} className={`pbox hlift ${sPage === p ? "on" : ""}`} onClick={() => setSPage(p)}>{p}</div>)}
+                                            <button onClick={() => setSPage(p => Math.min(totalP, p + 1))} disabled={sPage >= totalP} style={{ background: "none", border: "none", color: sPage >= totalP ? "#ccc" : "#444", fontWeight: 600, fontSize: 13, cursor: sPage >= totalP ? "default" : "pointer", padding: "0 10px" }}>Next</button>
                                         </div>
                                     );
                                 })()}
