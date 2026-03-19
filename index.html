@@ -356,6 +356,7 @@
             const [search, setSearch] = useState("");
             const [tIdx, setTIdx] = useState(0);
             const [sPage, setSPage] = useState(1);
+            const [vPage, setVPage] = useState(1);
 
             const getBestYear = useCallback((id) => (id || "").toLowerCase() === 'snsct' || id === 'all' ? '2025-26' : '2024-25', []);
 
@@ -430,32 +431,38 @@
 
             useEffect(() => { const t = setInterval(() => setTIdx(p => (p + 1) % 8), 4500); return () => clearInterval(t) }, []);
             useEffect(() => { setDept("All"); setSPage(1); }, [col]);
-            useEffect(() => { setSPage(1); }, [yr, search, catF, dept]);
+            useEffect(() => { setSPage(1); setVPage(1); }, [yr, search, catF, dept]);
 
             // ═══ Computed values using dynamic state ═══
             const depts = col === "all" ? ["All"] : deptMap[col] || ["All"];
             const sy = (y) => {
                 if (col === "all") {
-                    const ks = Object.keys(yearlyStats);
-                    const tp = ks.reduce((a, k) => a + (yearlyStats[k][y]?.p || 0), 0);
-                    const te = ks.reduce((a, k) => a + (yearlyStats[k][y]?.e || 0), 0);
-                    const tr = ks.reduce((a, k) => a + (yearlyStats[k][y]?.r || 0), 0);
-                    const to = ks.reduce((a, k) => a + (yearlyStats[k][y]?.o || 0), 0);
-                    const hv = ks.map(k => { const v = yearlyStats[k][y]?.h; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; });
-                    const av = ks.map(k => { const v = yearlyStats[k][y]?.a; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; }).filter(v => v > 0);
-                    const mv = ks.map(k => { const v = yearlyStats[k][y]?.m; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; }).filter(v => v > 0);
-                    const mx = Math.max(...hv);
-                    const ag = av.length ? (av.reduce((s, v) => s + v, 0) / av.length).toFixed(1) : "-";
-                    const mg = mv.length ? (mv.reduce((s, v) => s + v, 0) / mv.length).toFixed(1) : "-";
-                    return { p: tp, e: te, o: to, r: tr + "+", h: mx ? "₹" + mx + " LPA" : "-", a: ag !== "-" ? "₹" + ag + " LPA" : "-", m: mg !== "-" ? "₹" + mg + " LPA" : "-", rate: te ? Math.round((tp / te) * 100) + "%" : "0%" };
+                    const ks = Object.keys(yearlyStats).filter(k => k.toLowerCase() !== 'all' && k.toLowerCase() !== 'overall');
+                    let tp = 0, te = 0, tr = 0, to = 0, maxH = 0;
+                    let avL = [], mvL = [];
+                    ks.forEach(k => {
+                        const s = yearlyStats[k]?.[y];
+                        if (s) {
+                            tp += (s.p || 0); te += (s.e || 0); tr += (s.r || 0); to += (s.o || 0);
+                            const h = parseFloat(String(s.h).replace(/[^0-9.]/g, "")) || 0;
+                            if (h > maxH) maxH = h;
+                            const a = parseFloat(String(s.a).replace(/[^0-9.]/g, "")) || 0;
+                            if (a > 0) avL.push(a);
+                            const m = parseFloat(String(s.m).replace(/[^0-9.]/g, "")) || 0;
+                            if (m > 0) mvL.push(m);
+                        }
+                    });
+                    const avgA = avL.length ? (avL.reduce((sum, v) => sum + v, 0) / avL.length).toFixed(1) : "-";
+                    const avgM = mvL.length ? (mvL.reduce((sum, v) => sum + v, 0) / mvL.length).toFixed(1) : "-";
+                    return { p: tp, e: te, o: to, r: tr + "+", h: maxH ? "₹" + maxH + " LPA" : "-", a: avgA !== "-" ? "₹" + avgA + " LPA" : "-", m: avgM !== "-" ? "₹" + avgM + " LPA" : "-", rate: te ? Math.round((tp / te) * 100) + "%" : "0%" };
                 }
                 const s = yearlyStats[col]?.[y] || { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 };
-                return { p: s.p, e: s.e, o: s.o, r: s.r + "", h: s.h, a: s.a, m: s.m, rate: Math.round((s.p / s.e) * 100) + "%" };
+                return { p: s.p, e: s.e, o: s.o, r: s.r + "", h: s.h, a: s.a, m: s.m, rate: s.e ? Math.round((s.p / s.e) * 100) + "%" : "0%" };
             };
             const stats = sy(yr); const rate = parseInt(stats.rate);
 
             const overallStats = (() => {
-                const ks = Object.keys(yearlyStats);
+                const ks = Object.keys(yearlyStats).filter(k => k.toLowerCase() !== 'all' && k.toLowerCase() !== 'overall');
                 let tp = 0, tr = 0, to = 0, te = 0, maxH = 0;
                 let avL = [], mvL = [];
                 ks.forEach(k => {
@@ -806,7 +813,59 @@
 
                             {pg === "colleges" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Colleges & Departments</h2>{colleges.map(c => { const s = yearlyStats[c.id]?.[yr] || { h: "-", p: 0, e: 1 }; return (<div key={c.id} className="card" style={{ padding: 24, marginBottom: 16, borderLeft: `4px solid ${c.color}`, cursor: "pointer" }} onClick={() => { setCol(c.id); setPg("dashboard") }}><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 14 }}><div><h3 style={{ fontSize: 17, fontWeight: 700 }}>{c.name}</h3><div style={{ fontSize: 12, color: "#999" }}>{c.accr} · Code: {c.code} · {c.poc}</div><div style={{ fontSize: 12, color: "#999" }}>📧 {c.email}{c.phone && ` · 📞 ${c.phone}`}</div></div><div style={{ display: "flex", gap: 10 }}><StatBox v={s.h} l="Highest" /><StatBox v={s.p.toLocaleString()} l="Placed" /><StatBox v={Math.round(s.p / s.e * 100) + "%"} l="Rate" c="#4ECDC4" /></div></div><div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{(deptMap[c.id] || []).filter(d => d !== "All").map(d => (<span key={d} onClick={e => { e.stopPropagation(); setCol(c.id); setDept(d); setPg("dashboard") }} style={{ padding: "4px 12px", borderRadius: 100, background: "#f0f0f0", fontSize: 11, fontWeight: 500, color: "#555", cursor: "pointer", transition: "all .2s" }}>{d}</span>))}</div></div>) })}</div>)}
 
-                            {pg === "drives" && (<div><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}><h2 style={{ fontSize: 22, fontWeight: 800 }}>Company Visit History</h2><input className="srch" placeholder="Search company..." value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth: 250 }} /></div><div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>{["all", ...CATS].map(c => <button key={c} className={`pill ${catF === c ? "on" : ""}`} onClick={() => setCatF(c)}>{c === "all" ? "All" : c}</button>)}</div><div className="card" style={{ overflow: "auto", maxHeight: 600 }}><table className="tbl"><thead><tr><th>Company</th><th>Date</th><th>Package</th><th>Roles</th><th>Category</th><th>College</th><th>Dept</th><th>Status</th><th>Placed</th></tr></thead><tbody>{fv.map((v, i) => (<tr key={i}><td style={{ fontWeight: 600 }}>{v.co}</td><td style={{ fontSize: 12, color: "#888" }}>{v.dt}</td><td style={{ fontWeight: 600, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{v.pk}</td><td style={{ fontSize: 12, color: "#666" }}>{v.ro}</td><td><Badge bg={(v.cat || "").includes("IT Prod") ? "#E3F2FD" : (v.cat || "").includes("Core") ? "#FFF3E0" : (v.cat || "").includes("Sales") ? "#F3E5F5" : "#E8F5E9"} fg={(v.cat || "").includes("IT Prod") ? "#1565C0" : (v.cat || "").includes("Core") ? "#E65100" : (v.cat || "").includes("Sales") ? "#7B1FA2" : "#2E7D32"}>{v.cat || "Other"}</Badge></td><td style={{ fontSize: 12 }}>{v.cl === "all" ? "All" : (v.cl || "").toUpperCase()}</td><td style={{ fontSize: 12, color: "#888" }}>{v.dept}</td><td><Badge bg={v.st === "Completed" ? "#E8F5E9" : (v.st || "").includes("Progress") ? "#FFF3E0" : "#E3F2FD"} fg={v.st === "Completed" ? "#2E7D32" : (v.st || "").includes("Progress") ? "#E65100" : "#1565C0"}>{v.st || "—"}</Badge></td><td style={{ fontWeight: 600, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{v.sp || "—"}</td></tr>))}</tbody></table></div><div style={{ marginTop: 10, fontSize: 11, color: "#bbb" }}>{fv.length} drives shown</div></div>)}
+                            {pg === "drives" && (<div>
+                                <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
+                                    <h2 style={{ fontSize: 22, fontWeight: 800 }}>Company Visit History</h2>
+                                    <input className="srch" placeholder="Search company..." value={search} onChange={e => { setSearch(e.target.value); setVPage(1); }} style={{ maxWidth: 250 }} />
+                                </div>
+                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                                    {["all", ...CATS].map(c => <button key={c} className={`pill ${catF === c ? "on" : ""}`} onClick={() => { setCatF(c); setVPage(1); }}>{c === "all" ? "All" : c}</button>)}
+                                </div>
+                                <div className="card" style={{ minHeight: 600, display: "flex", flexDirection: "column" }}>
+                                    <div style={{ flex: 1, overflow: "auto" }}>
+                                        <table className="tbl">
+                                            <thead>
+                                                <tr><th>Company</th><th>Date</th><th>Roles</th><th>Category</th><th>College</th><th>Dept</th><th>Status</th><th>Placed</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                {fv.slice((vPage - 1) * 50, vPage * 50).map((v, i) => (
+                                                    <tr key={i}>
+                                                        <td style={{ fontWeight: 600 }}>{v.co}</td>
+                                                        <td style={{ fontSize: 12, color: "#888" }}>{v.dt}</td>
+                                                        <td style={{ fontSize: 12, color: "#666" }}>{v.ro}</td>
+                                                        <td><Badge bg={(v.cat || "").includes("IT Prod") ? "#E3F2FD" : (v.cat || "").includes("Core") ? "#FFF3E0" : (v.cat || "").includes("Sales") ? "#F3E5F5" : "#E8F5E9"} fg={(v.cat || "").includes("IT Prod") ? "#1565C0" : (v.cat || "").includes("Core") ? "#E65100" : (v.cat || "").includes("Sales") ? "#7B1FA2" : "#2E7D32"}>{v.cat || "Other"}</Badge></td>
+                                                        <td style={{ fontSize: 12 }}>{v.cl === "all" ? "All" : (v.cl || "").toUpperCase()}</td>
+                                                        <td style={{ fontSize: 12, color: "#888" }}>{v.dept}</td>
+                                                        <td><Badge bg={v.st === "Completed" ? "#E8F5E9" : (v.st || "").includes("Progress") ? "#FFF3E0" : "#E3F2FD"} fg={v.st === "Completed" ? "#2E7D32" : (v.st || "").includes("Progress") ? "#E65100" : "#1565C0"}>{v.st || "—"}</Badge></td>
+                                                        <td style={{ fontWeight: 600, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{v.sp || "—"}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div style={{ padding: 16, borderTop: "1px solid #eee", fontSize: 11, color: "#bbb" }}>{fv.length} drives shown</div>
+                                </div>
+                                {fv.length > 50 && (() => {
+                                    const totalP = Math.max(1, Math.ceil(fv.length / 50));
+                                    const pages = [];
+                                    const currentP = Math.min(vPage, totalP);
+                                    if (totalP <= 5) { for (let i = 1; i <= totalP; i++) pages.push(i); }
+                                    else {
+                                        if (currentP <= 3) pages.push(1, 2, 3, 4, 5);
+                                        else if (currentP > totalP - 3) pages.push(totalP - 4, totalP - 3, totalP - 2, totalP - 1, totalP);
+                                        else pages.push(currentP - 2, currentP - 1, currentP, currentP + 1, currentP + 2);
+                                    }
+                                    return (
+                                        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 32 }}>
+                                            <button onClick={() => setVPage(p => Math.max(1, p - 1))} className="pbox hlift" style={{ cursor: vPage <= 1 ? "default" : "pointer" }} disabled={vPage <= 1}>Prev</button>
+                                            {pages.map(p => (
+                                                <div key={`vp-${p}`} className={`pbox hlift ${vPage === p ? "on" : ""}`} style={{ cursor: "pointer" }} onClick={() => setVPage(p)}>{p}</div>
+                                            ))}
+                                            <button onClick={() => setVPage(p => Math.min(totalP, p + 1))} className="pbox hlift" style={{ cursor: vPage >= totalP ? "default" : "pointer" }} disabled={vPage >= totalP}>Next</button>
+                                        </div>
+                                    );
+                                })()}
+                            </div>)}
 
                             {pg === "salary" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Salary Analysis</h2><div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Package Distribution by College ({yr})</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Band</th><th>SNSCT</th>{yr !== "2025-26" && <th>SNSCE</th>}<th>Dr.SNSRCAS</th><th>Total</th></tr></thead><tbody>{salaryBands.map((b, i) => { const snsctVal = yr === "2025-26" ? b.snsct + b.snsce : b.snsct; const total = yr === "2025-26" ? (b.snsct + b.snsce + b.drsnsrcas) : (b.snsct + b.snsce + b.drsnsrcas); return <tr key={i}><td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td><td>{snsctVal}</td>{yr !== "2025-26" && <td>{b.snsce}</td>}<td>{b.drsnsrcas}</td><td style={{ fontWeight: 700 }}>{total}</td></tr> })}</tbody></table></div></div><div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top Package Companies</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Company</th><th>Package</th><th>Year</th><th>College</th><th>Category</th></tr></thead><tbody>{[{ c: "ServiceNow", p: "₹32 LPA", y: "2023-24", cl: "SNSCT", ct: "IT Product" }, { c: "Juspay", p: "₹10-21 LPA", y: "2024-25", cl: "SNSCE", ct: "IT Product" }, { c: "Cadence", p: "₹15 LPA", y: "2023-24", cl: "SNSCT", ct: "Core (VLSI)" }, { c: "Zoho", p: "₹10-14 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Sobha", p: "₹13.5 LPA", y: "2023-24", cl: "SNSCT", ct: "Core" }, { c: "Amazon", p: "₹8-15 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "PayPal", p: "₹8-12 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Deloitte", p: "₹7-12 LPA", y: "2024-25", cl: "SNSCT", ct: "Consulting" }, { c: "Intellipaat", p: "₹9 LPA", y: "2024-25", cl: "SNSCT+SNSCE", ct: "IT Services" }, { c: "KAAR Tech", p: "₹6-9 LPA", y: "2024-25", cl: "SNSCT", ct: "SAP" }].map((r, i) => <tr key={i}><td style={{ fontWeight: 600 }}>{r.c}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace" }}>{r.p}</td><td>{r.y}</td><td>{r.cl}</td><td style={{ fontSize: 12, color: "#888" }}>{r.ct}</td></tr>)}</tbody></table></div></div></div>)}
 
