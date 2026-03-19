@@ -610,7 +610,7 @@
                                 <img src="SNS-DT Logo.png" alt="SNS Institutions" style={{ height: 80, marginBottom: 40, display: "block" }} />
                                 <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: `${R}18`, border: `1px solid ${R}30`, borderRadius: 100, padding: "5px 14px", marginBottom: 20 }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ECDC4", animation: "pulse 2s infinite" }} /><span style={{ color: "rgba(255,255,255,.7)", fontSize: 11, fontWeight: 500, letterSpacing: "1px", textTransform: "uppercase" }}>YOP 2026 Placement Drives Active</span></div>
                                 <h1 style={{ fontSize: "clamp(34px,5vw,62px)", fontWeight: 900, color: "white", lineHeight: 1.05, letterSpacing: "-2px", marginBottom: 16 }}>Where <span style={{ color: R }}>Design Thinkers</span><br />Meet Dream Careers</h1>
-                                <p style={{ fontSize: 16, color: "rgba(255,255,255,.5)", lineHeight: 1.7, maxWidth: 560, marginBottom: 32 }}>India's first GenAI-Powered Design Thinking Institution. Comprehensive placement data across SNSCT, SNSCE, and Dr.SNSRCAS.</p>
+                                <p style={{ fontSize: 16, color: "rgba(255,255,255,.5)", lineHeight: 1.7, maxWidth: 560, marginBottom: 32 }}>India's first GenAI-Powered Design Thinking Institution. Comprehensive placement data across SNSCT, Dr.SNSRCAS, Paramedical & Bspine</p>
                                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 48 }}>
                                     <button onClick={() => setPg("dashboard")} style={{ background: R, color: "white", border: "none", padding: "14px 28px", borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'Outfit'" }}>Open Placement Portal →</button>
                                     <button onClick={() => setPg("drives")} style={{ background: "rgba(255,255,255,.08)", color: "white", border: "1px solid rgba(255,255,255,.2)", padding: "14px 28px", borderRadius: 12, fontSize: 14, fontWeight: 500, cursor: "pointer", backdropFilter: "blur(10px)", fontFamily: "'Outfit'" }}>View Company Drives</button>
@@ -727,12 +727,11 @@
                                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                             {[
                                                 { n: "SNS College of Technology (SNSCT)", l: "snsct.org" },
-                                                { n: "SNS College of Engineering (SNSCE)", l: "snsce.ac.in" },
                                                 { n: "Dr. SNS Rajalakshmi College (Dr.SNSRCAS)", l: "drsnsrcas.ac.in" },
                                                 { n: "SNS College of Pharmacy and Health Sciences", l: "snscphs.org" },
                                                 { n: "SNS College of Nursing", l: "snscnursing.org" },
                                                 { n: "SNS College of Physiotherapy", l: "snscphysio.org" },
-                                                { n: "SNS College of Allied Health Sciences", l: "snscahs.org" },
+                                                { n: "SNS College of Allied Health Science", l: "snscahs.org" },
                                             ].map(item => (
                                                 <a key={item.n} href={`https://${item.l}`} target="_blank" style={{ fontSize: 13, color: "rgba(255,255,255,.6)", textDecoration: "none", transition: "color .2s" }} className="hover-text">{item.n}</a>
                                             ))}
