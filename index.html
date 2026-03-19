@@ -41,8 +41,7 @@
         // GOOGLE SHEETS INTEGRATION CONFIG (No API Key needed)
         // ═══════════════════════════════════════════════════
         const SHEET_CONFIG = {
-            spreadsheetId: '1VqI_1aDSA6GTPKQAgUB8pMUph-_eDzODxDyfKQ0Glms',
-            apiKey: 'AIzaSyAzy9p53hv-3qZ_UHhaD1hMbJeCiY48S2Y',
+            spreadsheetId: '1VqI_1aDSA6GTPKQAgUB8pMUph-_eDzODxDyfKQ0Glms',    // ← Paste your Spreadsheet ID here
             cacheTime: 0, // Immediate update (no cache)
             sheets: {
                 colleges: 'College_Master',
@@ -86,9 +85,9 @@
             return rows;
         };
 
-        // Fetch data via Google Sheets API v4 (JSON) with localStorage caching
+        // Fetch data via public CSV export URL with localStorage caching
         const fetchSheetData = async (sheetName) => {
-            const cacheKey = `sns_sheet_api_${sheetName}`;
+            const cacheKey = `sns_sheet_csv_${sheetName}`;
             try {
                 const cached = localStorage.getItem(cacheKey);
                 if (cached) {
@@ -97,19 +96,22 @@
                 }
             } catch (e) { /* fallback to fetch */ }
 
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_CONFIG.spreadsheetId}/values/${encodeURIComponent(sheetName)}?key=${SHEET_CONFIG.apiKey}`;
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_CONFIG.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
             const res = await fetch(url);
-            if (!res.ok) throw new Error(`Sheets API error: ${res.status} — ${res.statusText}`);
+            if (!res.ok) throw new Error(`Sheets fetch error: ${res.status}`);
 
-            const json = await res.json();
-            const rows = json.values;
-            if (!rows || rows.length < 2) return { data: [], fromCache: false };
+            const text = await res.text();
+            const rows = parseCSV(text);
+            if (rows.length < 2) return { data: [], fromCache: false };
 
-            // Convert rows to array of objects using header row
-            const headers = rows[0];
+            // Convert rows to array of objects
+            const headers = rows[0].map(h => h.replace(/^"|"$/g, '')); // Strip quotes
             const data = rows.slice(1).map(row => {
                 const obj = {};
-                headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
+                headers.forEach((h, i) => {
+                    const val = row[i];
+                    obj[h] = val ? val.replace(/^"|"$/g, '') : '';
+                });
                 return obj;
             });
 
