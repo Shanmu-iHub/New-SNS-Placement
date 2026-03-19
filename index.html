@@ -169,16 +169,16 @@
             return null;
         };
 
-        const parseCompanyVisits = (rows) => rows.map(r => ({
+        const parseCompanyVisits = (rows) => rows.filter(r => r.company_name && r.company_name.trim()).map(r => ({
             co: r.company_name, dt: r.drive_date, pk: r.package_range, ro: r.roles,
-            cat: r.category, cl: r.college_code, st: r.status,
+            cat: r.category || "", cl: r.college_code || "all", st: r.status || "",
             sp: r.students_placed ? parseInt(r.students_placed) : null, dept: r.department,
             ay: r.academic_year || getAcademicYear(r.drive_date)
         }));
 
-        const parseUpcoming = (rows) => rows.map(r => ({
+        const parseUpcoming = (rows) => rows.filter(r => r.company_name && r.company_name.trim()).map(r => ({
             co: r.company_name, dt: r.drive_date, pk: r.package_range,
-            ro: r.roles, el: r.eligibility, cl: r.college_code
+            ro: r.roles, el: r.eligibility, cl: r.college_code || "all"
         }));
 
         const parseSalaryBands = (rows) => rows.map(r => ({
@@ -269,14 +269,7 @@
             snscphs: { "2024-25": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 } },
         };
 
-        const TREND_DATA = [
-            { y: "2025-26", p: "984", h: "₹53 LPA", a: "₹4.8 LPA", r: "150+", rate: "96%" },
-            { y: "2024-25", p: "2,271", h: "₹21 LPA", a: "₹4.5 LPA", r: "454+", rate: "94%" },
-            { y: "2023-24", p: "1,837", h: "₹19 LPA", a: "₹4.2 LPA", r: "380+", rate: "92%" },
-            { y: "2022-23", p: "1,749", h: "₹13.5 LPA", a: "₹4.0 LPA", r: "320+", rate: "90%" },
-            { y: "2021-22", p: "1,345", h: "₹12 LPA", a: "₹3.8 LPA", r: "280+", rate: "89%" },
-            { y: "2020-21", p: "1,664", h: "₹10 LPA", a: "₹3.5 LPA", r: "245+", rate: "90%" },
-        ];
+
 
         const SB = [
             { range: "₹20L+", snsct: 3, snsce: 2, drsnsrcas: 0, c: "#C41230" }, { range: "₹15-20L", snsct: 5, snsce: 3, drsnsrcas: 0, c: "#E63946" },
@@ -441,11 +434,23 @@
 
             // ═══ Computed values using dynamic state ═══
             const depts = col === "all" ? ["All"] : deptMap[col] || ["All"];
-            const gs = useCallback(() => {
-                if (col === "all") { const keys = Object.keys(yearlyStats); const tp = keys.reduce((a, k) => a + (yearlyStats[k][yr]?.p || 0), 0); const te = keys.reduce((a, k) => a + (yearlyStats[k][yr]?.e || 0), 0); const to = keys.reduce((a, k) => a + (yearlyStats[k][yr]?.o || 0), 0); const tr = keys.reduce((a, k) => a + (yearlyStats[k][yr]?.r || 0), 0); const hVals = keys.map(k => { const v = yearlyStats[k][yr]?.h; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; }); const maxH = Math.max(...hVals); const aVals = keys.map(k => { const v = yearlyStats[k][yr]?.a; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; }).filter(v => v > 0); const avgA = aVals.length ? (aVals.reduce((s, v) => s + v, 0) / aVals.length).toFixed(1) : "-"; const mVals = keys.map(k => { const v = yearlyStats[k][yr]?.m; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; }).filter(v => v > 0); const maxM = mVals.length ? Math.max(...mVals).toFixed(1) : "-"; return { p: tp, e: te, o: to, r: tr + "+", h: maxH ? "₹" + maxH + " LPA" : "-", a: avgA !== "-" ? "₹" + avgA + " LPA" : "-", m: maxM !== "-" ? "₹" + maxM + " LPA" : "-" }; }
-                const s = yearlyStats[col]?.[yr]; return s ? { p: s.p, e: s.e, o: s.o, r: s.r + "", h: s.h, a: s.a, m: s.m } : { p: 0, e: 1, o: 0, r: "0", h: "-", a: "-", m: "-" };
-            }, [col, yr, yearlyStats]);
-            const stats = gs(); const rate = Math.round((stats.p / stats.e) * 100);
+            const sy = (y) => {
+                if (col === "all") {
+                    const ks = Object.keys(yearlyStats);
+                    const tp = ks.reduce((a, k) => a + (yearlyStats[k][y]?.p || 0), 0);
+                    const te = ks.reduce((a, k) => a + (yearlyStats[k][y]?.e || 0), 0);
+                    const tr = ks.reduce((a, k) => a + (yearlyStats[k][y]?.r || 0), 0);
+                    const to = ks.reduce((a, k) => a + (yearlyStats[k][y]?.o || 0), 0);
+                    const hv = ks.map(k => { const v = yearlyStats[k][y]?.h; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; });
+                    const av = ks.map(k => { const v = yearlyStats[k][y]?.a; if (!v || v === "-") return 0; return parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0; }).filter(v => v > 0);
+                    const mx = Math.max(...hv);
+                    const ag = av.length ? (av.reduce((s, v) => s + v, 0) / av.length).toFixed(1) : "-";
+                    return { p: tp, e: te, o: to, r: tr + "+", h: mx ? "₹" + mx + " LPA" : "-", a: ag !== "-" ? "₹" + ag + " LPA" : "-", rate: te ? Math.round((tp / te) * 100) + "%" : "0%" };
+                }
+                const s = yearlyStats[col]?.[y] || { h: "-", a: "-", p: 0, e: 1, r: 0 };
+                return { p: s.p, e: s.e, o: s.o, r: s.r + "", h: s.h, a: s.a, rate: Math.round((s.p / s.e) * 100) + "%" };
+            };
+            const stats = sy(yr); const rate = parseInt(stats.rate);
 
             const fv = companyVisits.filter(v => {
                 const matchCol = col === "all" || v.cl === col || v.cl === "all";
@@ -453,7 +458,8 @@
                 const matchDept = dept === "All" || v.dept === dept || v.dept === "Multiple";
                 const matchSearch = search === "" || v.co.toLowerCase().includes(search.toLowerCase());
                 const vYear = v.ay || getAcademicYear(v.dt);
-                const matchYear = !vYear || vYear === yr;
+                const matchYear = yr === "All" || !vYear || vYear === yr ||
+                    (vYear.includes("-") && (yr.includes(vYear.split("-")[0].slice(-2)) || yr.includes(vYear.split("-")[1].slice(-2))));
                 return matchCol && matchCat && matchDept && matchSearch && matchYear;
             });
 
@@ -754,16 +760,19 @@
                                                 <tr><th>Year</th><th>Placed</th><th>Highest</th><th>Avg</th><th>Recruiters</th><th>Rate</th></tr>
                                             </thead>
                                             <tbody>
-                                                {TREND_DATA.map((row, i) => (
-                                                    <tr key={i} style={{ background: row.y === yr ? `${R}06` : "transparent" }}>
-                                                        <td style={{ fontWeight: 600 }}>{row.y}</td>
-                                                        <td>{row.p}</td>
-                                                        <td>{row.h}</td>
-                                                        <td>{row.a}</td>
-                                                        <td>{row.r}</td>
-                                                        <td>{row.rate}</td>
-                                                    </tr>
-                                                ))}
+                                                {YEARS.map((y, i) => {
+                                                    const s = sy(y);
+                                                    return (
+                                                        <tr key={i} style={{ background: y === yr ? `${R}06` : "transparent" }}>
+                                                            <td style={{ fontWeight: 600 }}>{y}</td>
+                                                            <td>{s.p.toLocaleString()}</td>
+                                                            <td>{s.h}</td>
+                                                            <td>{s.a}</td>
+                                                            <td>{s.r}</td>
+                                                            <td>{s.rate}</td>
+                                                        </tr>
+                                                    );
+                                                })}
                                             </tbody>
                                         </table>
                                     </div>
@@ -773,7 +782,7 @@
 
                             {pg === "colleges" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Colleges & Departments</h2>{colleges.map(c => { const s = yearlyStats[c.id]?.[yr] || { h: "-", p: 0, e: 1 }; return (<div key={c.id} className="card" style={{ padding: 24, marginBottom: 16, borderLeft: `4px solid ${c.color}`, cursor: "pointer" }} onClick={() => { setCol(c.id); setPg("dashboard") }}><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 14 }}><div><h3 style={{ fontSize: 17, fontWeight: 700 }}>{c.name}</h3><div style={{ fontSize: 12, color: "#999" }}>{c.accr} · Code: {c.code} · {c.poc}</div><div style={{ fontSize: 12, color: "#999" }}>📧 {c.email}{c.phone && ` · 📞 ${c.phone}`}</div></div><div style={{ display: "flex", gap: 10 }}><StatBox v={s.h} l="Highest" /><StatBox v={s.p.toLocaleString()} l="Placed" /><StatBox v={Math.round(s.p / s.e * 100) + "%"} l="Rate" c="#4ECDC4" /></div></div><div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{(deptMap[c.id] || []).filter(d => d !== "All").map(d => (<span key={d} onClick={e => { e.stopPropagation(); setCol(c.id); setDept(d); setPg("dashboard") }} style={{ padding: "4px 12px", borderRadius: 100, background: "#f0f0f0", fontSize: 11, fontWeight: 500, color: "#555", cursor: "pointer", transition: "all .2s" }}>{d}</span>))}</div></div>) })}</div>)}
 
-                            {pg === "drives" && (<div><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}><h2 style={{ fontSize: 22, fontWeight: 800 }}>Company Visit History</h2><input className="srch" placeholder="Search company..." value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth: 250 }} /></div><div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>{["all", ...CATS].map(c => <button key={c} className={`pill ${catF === c ? "on" : ""}`} onClick={() => setCatF(c)}>{c === "all" ? "All" : c}</button>)}</div><div className="card" style={{ overflow: "auto", maxHeight: 600 }}><table className="tbl"><thead><tr><th>Company</th><th>Date</th><th>Package</th><th>Roles</th><th>Category</th><th>College</th><th>Dept</th><th>Status</th><th>Placed</th></tr></thead><tbody>{fv.map((v, i) => (<tr key={i}><td style={{ fontWeight: 600 }}>{v.co}</td><td style={{ fontSize: 12, color: "#888" }}>{v.dt}</td><td style={{ fontWeight: 600, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{v.pk}</td><td style={{ fontSize: 12, color: "#666" }}>{v.ro}</td><td><Badge bg={v.cat.includes("IT Prod") ? "#E3F2FD" : v.cat.includes("Core") ? "#FFF3E0" : v.cat.includes("Sales") ? "#F3E5F5" : "#E8F5E9"} fg={v.cat.includes("IT Prod") ? "#1565C0" : v.cat.includes("Core") ? "#E65100" : v.cat.includes("Sales") ? "#7B1FA2" : "#2E7D32"}>{v.cat}</Badge></td><td style={{ fontSize: 12 }}>{v.cl === "all" ? "All" : v.cl.toUpperCase()}</td><td style={{ fontSize: 12, color: "#888" }}>{v.dept}</td><td><Badge bg={v.st === "Completed" ? "#E8F5E9" : v.st.includes("Progress") ? "#FFF3E0" : "#E3F2FD"} fg={v.st === "Completed" ? "#2E7D32" : v.st.includes("Progress") ? "#E65100" : "#1565C0"}>{v.st}</Badge></td><td style={{ fontWeight: 600, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{v.sp || "—"}</td></tr>))}</tbody></table></div><div style={{ marginTop: 10, fontSize: 11, color: "#bbb" }}>{fv.length} drives shown</div></div>)}
+                            {pg === "drives" && (<div><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}><h2 style={{ fontSize: 22, fontWeight: 800 }}>Company Visit History</h2><input className="srch" placeholder="Search company..." value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth: 250 }} /></div><div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>{["all", ...CATS].map(c => <button key={c} className={`pill ${catF === c ? "on" : ""}`} onClick={() => setCatF(c)}>{c === "all" ? "All" : c}</button>)}</div><div className="card" style={{ overflow: "auto", maxHeight: 600 }}><table className="tbl"><thead><tr><th>Company</th><th>Date</th><th>Package</th><th>Roles</th><th>Category</th><th>College</th><th>Dept</th><th>Status</th><th>Placed</th></tr></thead><tbody>{fv.map((v, i) => (<tr key={i}><td style={{ fontWeight: 600 }}>{v.co}</td><td style={{ fontSize: 12, color: "#888" }}>{v.dt}</td><td style={{ fontWeight: 600, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{v.pk}</td><td style={{ fontSize: 12, color: "#666" }}>{v.ro}</td><td><Badge bg={(v.cat || "").includes("IT Prod") ? "#E3F2FD" : (v.cat || "").includes("Core") ? "#FFF3E0" : (v.cat || "").includes("Sales") ? "#F3E5F5" : "#E8F5E9"} fg={(v.cat || "").includes("IT Prod") ? "#1565C0" : (v.cat || "").includes("Core") ? "#E65100" : (v.cat || "").includes("Sales") ? "#7B1FA2" : "#2E7D32"}>{v.cat || "Other"}</Badge></td><td style={{ fontSize: 12 }}>{v.cl === "all" ? "All" : (v.cl || "").toUpperCase()}</td><td style={{ fontSize: 12, color: "#888" }}>{v.dept}</td><td><Badge bg={v.st === "Completed" ? "#E8F5E9" : (v.st || "").includes("Progress") ? "#FFF3E0" : "#E3F2FD"} fg={v.st === "Completed" ? "#2E7D32" : (v.st || "").includes("Progress") ? "#E65100" : "#1565C0"}>{v.st || "—"}</Badge></td><td style={{ fontWeight: 600, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{v.sp || "—"}</td></tr>))}</tbody></table></div><div style={{ marginTop: 10, fontSize: 11, color: "#bbb" }}>{fv.length} drives shown</div></div>)}
 
                             {pg === "salary" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Salary Analysis</h2><div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Package Distribution by College ({yr})</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Band</th><th>SNSCT</th>{yr !== "2025-26" && <th>SNSCE</th>}<th>Dr.SNSRCAS</th><th>Total</th></tr></thead><tbody>{salaryBands.map((b, i) => { const snsctVal = yr === "2025-26" ? b.snsct + b.snsce : b.snsct; const total = yr === "2025-26" ? (b.snsct + b.snsce + b.drsnsrcas) : (b.snsct + b.snsce + b.drsnsrcas); return <tr key={i}><td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td><td>{snsctVal}</td>{yr !== "2025-26" && <td>{b.snsce}</td>}<td>{b.drsnsrcas}</td><td style={{ fontWeight: 700 }}>{total}</td></tr> })}</tbody></table></div></div><div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top Package Companies</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Company</th><th>Package</th><th>Year</th><th>College</th><th>Category</th></tr></thead><tbody>{[{ c: "ServiceNow", p: "₹32 LPA", y: "2023-24", cl: "SNSCT", ct: "IT Product" }, { c: "Juspay", p: "₹10-21 LPA", y: "2024-25", cl: "SNSCE", ct: "IT Product" }, { c: "Cadence", p: "₹15 LPA", y: "2023-24", cl: "SNSCT", ct: "Core (VLSI)" }, { c: "Zoho", p: "₹10-14 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Sobha", p: "₹13.5 LPA", y: "2023-24", cl: "SNSCT", ct: "Core" }, { c: "Amazon", p: "₹8-15 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "PayPal", p: "₹8-12 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Deloitte", p: "₹7-12 LPA", y: "2024-25", cl: "SNSCT", ct: "Consulting" }, { c: "Intellipaat", p: "₹9 LPA", y: "2024-25", cl: "SNSCT+SNSCE", ct: "IT Services" }, { c: "KAAR Tech", p: "₹6-9 LPA", y: "2024-25", cl: "SNSCT", ct: "SAP" }].map((r, i) => <tr key={i}><td style={{ fontWeight: 600 }}>{r.c}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace" }}>{r.p}</td><td>{r.y}</td><td>{r.cl}</td><td style={{ fontSize: 12, color: "#888" }}>{r.ct}</td></tr>)}</tbody></table></div></div></div>)}
 
