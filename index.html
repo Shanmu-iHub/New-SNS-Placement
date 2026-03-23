@@ -87,7 +87,7 @@
 
         // Fetch data via public CSV export URL with localStorage caching
         const fetchSheetData = async (sheetName) => {
-            const cacheKey = `sns_sheet_csv_${sheetName}`;
+            const cacheKey = `sns_sheet_csv_v2_${sheetName}`; // v2: includes academic_year column
             try {
                 const cached = localStorage.getItem(cacheKey);
                 if (cached) {
@@ -181,11 +181,26 @@
             ro: r.roles, el: r.eligibility, cl: r.college_code || "all"
         }));
 
-        const parseSalaryBands = (rows) => rows.map(r => ({
-            range: r.salary_band, snsct: parseInt(r.snsct_count) || 0,
-            snsce: parseInt(r.snsce_count) || 0, drsnsrcas: parseInt(r.drsnsrcas_count) || 0,
-            c: r.band_color || '#C41230'
-        }));
+        const parseSalaryBands = (rows) => {
+            // Group by academic_year; if no academic_year column, treat all rows as a 'all' fallback
+            const grouped = {};
+            rows.forEach(r => {
+                const ay = (r.academic_year || '').trim() || 'all';
+                if (!grouped[ay]) grouped[ay] = [];
+                grouped[ay].push({
+                    range: r.salary_band,
+                    snsct: parseInt(r.snsct_count) || 0,
+                    snsce: parseInt(r.snsce_count) || 0,
+                    drsnsrcas: parseInt(r.drsnsrcas_count) || 0,
+                    snscnursing: parseInt(r.snscnursing) || 0,
+                    snscahs: parseInt(r.snscahs) || 0,
+                    snscphs: parseInt(r.snscphs) || 0,
+                    snscphysio: parseInt(r.snscp) || 0, // Map snscp header to physio
+                    c: r.band_color || '#C41230'
+                });
+            });
+            return grouped;
+        };
 
         const parseCertifications = (rows) => {
             const result = { it: [], core: [] };
@@ -271,12 +286,35 @@
 
 
 
-        const SB = [
-            { range: "₹20L+", snsct: 3, snsce: 2, drsnsrcas: 0, c: "#C41230" }, { range: "₹15-20L", snsct: 5, snsce: 3, drsnsrcas: 0, c: "#E63946" },
-            { range: "₹10-15L", snsct: 25, snsce: 15, drsnsrcas: 2, c: "#F4845F" }, { range: "₹7-10L", snsct: 80, snsce: 50, drsnsrcas: 10, c: "#F7B267" },
-            { range: "₹5-7L", snsct: 200, snsce: 120, drsnsrcas: 40, c: "#7FB069" }, { range: "₹3-5L", snsct: 800, snsce: 400, drsnsrcas: 300, c: "#4ECDC4" },
-            { range: "₹2-3L", snsct: 500, snsce: 200, drsnsrcas: 150, c: "#45B7D1" },
-        ];
+        const SB = {
+            "2025-26": [
+                { range: "₹20L+", snsct: 3, snsce: 0, drsnsrcas: 0, c: "#C41230" },
+                { range: "₹15-20L", snsct: 5, snsce: 0, drsnsrcas: 0, c: "#E63946" },
+                { range: "₹10-15L", snsct: 38, snsce: 0, drsnsrcas: 2, c: "#F4845F" },
+                { range: "₹7-10L", snsct: 30, snsce: 0, drsnsrcas: 10, c: "#F7B267" },
+                { range: "₹5-7L", snsct: 237, snsce: 0, drsnsrcas: 40, c: "#7FB069" },
+                { range: "₹3-5L", snsct: 462, snsce: 0, drsnsrcas: 100, c: "#4ECDC4" },
+                { range: "₹2-3L", snsct: 196, snsce: 0, drsnsrcas: 50, c: "#45B7D1" },
+            ],
+            "2024-25": [
+                { range: "₹20L+", snsct: 2, snsce: 1, drsnsrcas: 0, c: "#C41230" },
+                { range: "₹15-20L", snsct: 1, snsce: 0, drsnsrcas: 0, c: "#E63946" },
+                { range: "₹10-15L", snsct: 16, snsce: 10, drsnsrcas: 2, c: "#F4845F" },
+                { range: "₹7-10L", snsct: 11, snsce: 6, drsnsrcas: 8, c: "#F7B267" },
+                { range: "₹5-7L", snsct: 53, snsce: 44, drsnsrcas: 25, c: "#7FB069" },
+                { range: "₹3-5L", snsct: 244, snsce: 315, drsnsrcas: 150, c: "#4ECDC4" },
+                { range: "₹2-3L", snsct: 100, snsce: 196, drsnsrcas: 100, c: "#45B7D1" },
+            ],
+            "2023-24": [
+                { range: "₹20L+", snsct: 1, snsce: 0, drsnsrcas: 0, c: "#C41230" },
+                { range: "₹15-20L", snsct: 2, snsce: 0, drsnsrcas: 0, c: "#E63946" },
+                { range: "₹10-15L", snsct: 10, snsce: 5, drsnsrcas: 1, c: "#F4845F" },
+                { range: "₹7-10L", snsct: 30, snsce: 20, drsnsrcas: 8, c: "#F7B267" },
+                { range: "₹5-7L", snsct: 120, snsce: 80, drsnsrcas: 30, c: "#7FB069" },
+                { range: "₹3-5L", snsct: 500, snsce: 350, drsnsrcas: 200, c: "#4ECDC4" },
+                { range: "₹2-3L", snsct: 300, snsce: 180, drsnsrcas: 120, c: "#45B7D1" },
+            ],
+        };
 
         // CATS: each entry has a display label and an array of keywords to match against sheet data
         const CATS = [
@@ -365,6 +403,7 @@
             const [tIdx, setTIdx] = useState(0);
             const [sPage, setSPage] = useState(1);
             const [vPage, setVPage] = useState(1);
+            const [salaryYr, setSalaryYr] = useState("2025-26");
 
             const getBestYear = useCallback((id) => (id || "").toLowerCase() === 'snsct' || id === 'all' ? '2025-26' : '2024-25', []);
 
@@ -374,7 +413,7 @@
             const [yearlyStats, setYearlyStats] = useState(YS);
             const [companyVisits, setCompanyVisits] = useState(CV);
             const [upcoming, setUpcoming] = useState(UPCOMING);
-            const [salaryBands, setSalaryBands] = useState(SB);
+            const [salaryBandsByYear, setSalaryBandsByYear] = useState(SB);
             const [certData, setCertData] = useState(CERTS);
             const [trainingData, setTrainingData] = useState(TR);
             const [platformData, setPlatformData] = useState(PL);
@@ -412,7 +451,7 @@
                     if (get(2)) setYearlyStats(parsePlacementStats(get(2)));
                     if (get(3)) setCompanyVisits(parseCompanyVisits(get(3)));
                     if (get(4)) setUpcoming(parseUpcoming(get(4)));
-                    if (get(5)) setSalaryBands(parseSalaryBands(get(5)));
+                    if (get(5)) setSalaryBandsByYear(parseSalaryBands(get(5)));
                     if (get(6)) setCertData(parseCertifications(get(6)));
                     if (get(7)) setTrainingData(parseTraining(get(7)));
                     if (get(8)) setPlatformData(parsePlatforms(get(8)));
@@ -440,6 +479,7 @@
             useEffect(() => { const t = setInterval(() => setTIdx(p => (p + 1) % 8), 4500); return () => clearInterval(t) }, []);
             useEffect(() => { setDept("All"); setSPage(1); }, [col]);
             useEffect(() => { setSPage(1); setVPage(1); }, [yr, search, catF, dept]);
+            useEffect(() => { setSalaryYr(yr); }, [yr]);
 
             // ═══ Computed values using dynamic state ═══
             const depts = col === "all" ? ["All"] : deptMap[col] || ["All"];
@@ -507,6 +547,18 @@
                     (vYear.includes("-") && (yr.includes(vYear.split("-")[0].slice(-2)) || yr.includes(vYear.split("-")[1].slice(-2))));
                 return matchCol && matchCat && matchDept && matchSearch && matchYear;
             });
+
+            // Compute salary bands for the currently selected salary year
+            const availableSalaryYears = Object.keys(salaryBandsByYear).filter(k => k !== 'all').sort().reverse();
+            const salaryBands = (() => {
+                if (salaryBandsByYear[salaryYr]) return salaryBandsByYear[salaryYr];
+                if (salaryBandsByYear[yr]) return salaryBandsByYear[yr];
+                if (salaryBandsByYear['all']) return salaryBandsByYear['all'];
+                const keys = Object.keys(salaryBandsByYear);
+                return keys.length > 0 ? salaryBandsByYear[keys[0]] : [];
+            })();
+            // Map college filter id to salary band field name
+            const colToField = { snsct: 'snsct', snsce: 'snsce', drsnsrcas: 'drsnsrcas', snscn: 'snscnursing', snscahs: 'snscahs', snscphs: 'snscphs', snscphysio: 'snscphysio' };
 
             const navItems = [{ id: "home", icon: "🏠", l: "Home" }, { id: "dashboard", icon: "📊", l: "Dashboard" }, { id: "colleges", icon: "🏫", l: "Colleges & Depts" }, { id: "drives", icon: "🏢", l: "Company Drives" }, { id: "salary", icon: "💰", l: "Salary Analysis" }, { id: "students", icon: "🎓", l: "Placed Students" }, { id: "training", icon: "📚", l: "Training" }, { id: "upcoming", icon: "📅", l: "Upcoming" }, { id: "facilities", icon: "🏗️", l: "Facilities" }];
             const Badge = ({ children, bg, fg }) => <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 100, fontSize: 10, fontWeight: 600, background: bg, color: fg }}>{children}</span>;
@@ -821,7 +873,45 @@
                                         </table>
                                     </div>
                                 </div>
-                                <div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Salary Distribution</h3>{salaryBands.map((b, i) => { const val = col === "all" ? (b.snsct + b.snsce + b.drsnsrcas) : (b[col] || 0); const mx = col === "all" ? 1500 : 800; return (<div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}><div style={{ width: 70, fontSize: 12, fontWeight: 700, fontFamily: "'Space Mono',monospace", color: "#555", flexShrink: 0 }}>{b.range}</div><div style={{ flex: 1, height: 24, background: "#f0f0f0", borderRadius: 4, overflow: "hidden" }}><div className="bar" style={{ width: `${Math.max((val / mx) * 100, 2)}%`, background: b.c, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8 }}><span style={{ fontSize: 10, fontWeight: 700, color: "white" }}>{val}</span></div></div></div>) })}</div>
+                                <div className="card" style={{ padding: 24 }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+                                        <h3 style={{ fontSize: 15, fontWeight: 700 }}>Salary Distribution</h3>
+                                        <select
+                                            value={salaryYr}
+                                            onChange={e => setSalaryYr(e.target.value)}
+                                            style={{ padding: "5px 10px", borderRadius: 8, border: `1px solid ${R}40`, fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer", color: R, fontWeight: 600, background: `${R}08`, outline: "none" }}
+                                        >
+                                            {(availableSalaryYears.length > 0 ? availableSalaryYears : YEARS).map(y => <option key={y} value={y}>{y}</option>)}
+                                        </select>
+                                    </div>
+                                    {salaryBands.length === 0
+                                        ? <div style={{ color: "#aaa", fontSize: 13, textAlign: "center", padding: 20 }}>No data available for {salaryYr}</div>
+                                        : (() => {
+                                            const fieldName = colToField[col] || col;
+                                            const getVal = (b) => {
+                                                if (col !== "all") return (b[fieldName] || 0);
+                                                // Sum all college values for "all"
+                                                return (b.snsct || 0) + (b.snsce || 0) + (b.drsnsrcas || 0) + (b.snscnursing || 0) + (b.snscahs || 0) + (b.snscphs || 0) + (b.snscphysio || 0);
+                                            };
+                                            const allVals = salaryBands.map(b => getVal(b));
+                                            const mx = Math.max(...allVals, 1);
+                                            return salaryBands.map((b, i) => {
+                                                const val = getVal(b);
+                                                return (
+                                                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                                                        <div style={{ width: 70, fontSize: 12, fontWeight: 700, fontFamily: "'Space Mono',monospace", color: "#555", flexShrink: 0 }}>{b.range}</div>
+                                                        <div style={{ flex: 1, height: 24, background: "#f0f0f0", borderRadius: 4, overflow: "hidden" }}>
+                                                            <div className="bar" style={{ width: `${Math.max((val / mx) * 100, val > 0 ? 2 : 0)}%`, background: b.c, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8 }}>
+                                                                <span style={{ fontSize: 10, fontWeight: 700, color: "white" }}>{val}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ width: 35, fontSize: 11, fontWeight: 600, color: "#888", textAlign: "right", flexShrink: 0 }}>{val}</div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()
+                                    }
+                                </div>
                             </div>)}
 
                             {pg === "colleges" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Colleges & Departments</h2>{colleges.map(c => { const s = yearlyStats[c.id]?.[yr] || { h: "-", p: 0, e: 1 }; return (<div key={c.id} className="card" style={{ padding: 24, marginBottom: 16, borderLeft: `4px solid ${c.color}`, cursor: "pointer" }} onClick={() => { setCol(c.id); setPg("dashboard") }}><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 14 }}><div><h3 style={{ fontSize: 17, fontWeight: 700 }}>{c.name}</h3><div style={{ fontSize: 12, color: "#999" }}>{c.accr} · Code: {c.code} · {c.poc}</div><div style={{ fontSize: 12, color: "#999" }}>📧 {c.email}{c.phone && ` · 📞 ${c.phone}`}</div></div><div style={{ display: "flex", gap: 10 }}><StatBox v={s.h} l="Highest" /><StatBox v={s.p.toLocaleString()} l="Placed" /><StatBox v={Math.round(s.p / s.e * 100) + "%"} l="Rate" c="#4ECDC4" /></div></div><div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{(deptMap[c.id] || []).filter(d => d !== "All").map(d => (<span key={d} onClick={e => { e.stopPropagation(); setCol(c.id); setDept(d); setPg("dashboard") }} style={{ padding: "4px 12px", borderRadius: 100, background: "#f0f0f0", fontSize: 11, fontWeight: 500, color: "#555", cursor: "pointer", transition: "all .2s" }}>{d}</span>))}</div></div>) })}</div>)}
@@ -880,7 +970,7 @@
                                 })()}
                             </div>)}
 
-                            {pg === "salary" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Salary Analysis</h2><div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Package Distribution by College ({yr})</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Band</th><th>SNSCT</th>{yr !== "2025-26" && <th>SNSCE</th>}<th>Dr.SNSRCAS</th><th>Total</th></tr></thead><tbody>{salaryBands.map((b, i) => { const snsctVal = yr === "2025-26" ? b.snsct + b.snsce : b.snsct; const total = yr === "2025-26" ? (b.snsct + b.snsce + b.drsnsrcas) : (b.snsct + b.snsce + b.drsnsrcas); return <tr key={i}><td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td><td>{snsctVal}</td>{yr !== "2025-26" && <td>{b.snsce}</td>}<td>{b.drsnsrcas}</td><td style={{ fontWeight: 700 }}>{total}</td></tr> })}</tbody></table></div></div><div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top Package Companies</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Company</th><th>Package</th><th>Year</th><th>College</th><th>Category</th></tr></thead><tbody>{[{ c: "ServiceNow", p: "₹32 LPA", y: "2023-24", cl: "SNSCT", ct: "IT Product" }, { c: "Juspay", p: "₹10-21 LPA", y: "2024-25", cl: "SNSCE", ct: "IT Product" }, { c: "Cadence", p: "₹15 LPA", y: "2023-24", cl: "SNSCT", ct: "Core (VLSI)" }, { c: "Zoho", p: "₹10-14 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Sobha", p: "₹13.5 LPA", y: "2023-24", cl: "SNSCT", ct: "Core" }, { c: "Amazon", p: "₹8-15 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "PayPal", p: "₹8-12 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Deloitte", p: "₹7-12 LPA", y: "2024-25", cl: "SNSCT", ct: "Consulting" }, { c: "Intellipaat", p: "₹9 LPA", y: "2024-25", cl: "SNSCT+SNSCE", ct: "IT Services" }, { c: "KAAR Tech", p: "₹6-9 LPA", y: "2024-25", cl: "SNSCT", ct: "SAP" }].map((r, i) => <tr key={i}><td style={{ fontWeight: 600 }}>{r.c}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace" }}>{r.p}</td><td>{r.y}</td><td>{r.cl}</td><td style={{ fontSize: 12, color: "#888" }}>{r.ct}</td></tr>)}</tbody></table></div></div></div>)}
+                            {pg === "salary" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Salary Analysis</h2><div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Package Distribution by College ({yr})</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Band</th><th>SNSCT</th>{yr !== "2025-26" && <th>SNSCE</th>}<th>Dr.SNSRCAS</th><th>Nursing</th><th>AHS</th><th>Pharmacy</th><th>Physio</th><th>Total</th></tr></thead><tbody>{salaryBands.map((b, i) => { const snsctVal = yr === "2025-26" ? b.snsct + b.snsce : b.snsct; const total = (b.snsct || 0) + (b.snsce || 0) + (b.drsnsrcas || 0) + (b.snscnursing || 0) + (b.snscahs || 0) + (b.snscphs || 0) + (b.snscphysio || 0); return <tr key={i}><td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td><td>{snsctVal}</td>{yr !== "2025-26" && <td>{b.snsce}</td>}<td>{b.drsnsrcas}</td><td>{b.snscnursing}</td><td>{b.snscahs}</td><td>{b.snscphs}</td><td>{b.snscphysio}</td><td style={{ fontWeight: 700 }}>{total}</td></tr> })}</tbody></table></div></div><div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top Package Companies</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Company</th><th>Package</th><th>Year</th><th>College</th><th>Category</th></tr></thead><tbody>{[{ c: "ServiceNow", p: "₹32 LPA", y: "2023-24", cl: "SNSCT", ct: "IT Product" }, { c: "Juspay", p: "₹10-21 LPA", y: "2024-25", cl: "SNSCE", ct: "IT Product" }, { c: "Cadence", p: "₹15 LPA", y: "2023-24", cl: "SNSCT", ct: "Core (VLSI)" }, { c: "Zoho", p: "₹10-14 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Sobha", p: "₹13.5 LPA", y: "2023-24", cl: "SNSCT", ct: "Core" }, { c: "Amazon", p: "₹8-15 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "PayPal", p: "₹8-12 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Deloitte", p: "₹7-12 LPA", y: "2024-25", cl: "SNSCT", ct: "Consulting" }, { c: "Intellipaat", p: "₹9 LPA", y: "2024-25", cl: "SNSCT+SNSCE", ct: "IT Services" }, { c: "KAAR Tech", p: "₹6-9 LPA", y: "2024-25", cl: "SNSCT", ct: "SAP" }].map((r, i) => <tr key={i}><td style={{ fontWeight: 600 }}>{r.c}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace" }}>{r.p}</td><td>{r.y}</td><td>{r.cl}</td><td style={{ fontSize: 12, color: "#888" }}>{r.ct}</td></tr>)}</tbody></table></div></div></div>)}
 
                             {pg === "students" && (<div>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
