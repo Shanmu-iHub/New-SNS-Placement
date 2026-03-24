@@ -38,11 +38,12 @@
         const R = "#C41230", D = "#0B0E17", G = "#16213E";
 
         // ═══════════════════════════════════════════════════
-        // GOOGLE SHEETS INTEGRATION CONFIG (No API Key needed)
+        // GOOGLE SHEETS API V4 INTEGRATION
         // ═══════════════════════════════════════════════════
         const SHEET_CONFIG = {
-            spreadsheetId: '1VqI_1aDSA6GTPKQAgUB8pMUph-_eDzODxDyfKQ0Glms',    // ← Paste your Spreadsheet ID here
-            cacheTime: 0, // Immediate update (no cache)
+            spreadsheetId: '1VqI_1aDSA6GTPKQAgUB8pMUph-_eDzODxDyfKQ0Glms',
+            apiKey: 'AIzaSyAzy9p53hv-3qZ_UHhaD1hMbJeCiY48S2Y',
+            cacheTime: 0, // 0 minutes cache
             sheets: {
                 colleges: 'College_Master',
                 departments: 'Department_Mapping',
@@ -59,59 +60,34 @@
             }
         };
 
-        const sheetsEnabled = () => !!SHEET_CONFIG.spreadsheetId;
+        const sheetsEnabled = () => !!SHEET_CONFIG.spreadsheetId && !!SHEET_CONFIG.apiKey;
 
-        // Custom lightweight CSV parser
-        const parseCSV = (text) => {
-            const rows = [];
-            let row = [];
-            let cell = '';
-            let inQuotes = false;
-
-            for (let i = 0; i < text.length; i++) {
-                const c = text[i], nc = text[i + 1];
-                if (c === '"' && inQuotes && nc === '"') { cell += '"'; i++; } // Escaped quote
-                else if (c === '"') inQuotes = !inQuotes; // Toggle quotes
-                else if (c === ',' && !inQuotes) { row.push(cell.trim()); cell = ''; } // End of cell
-                else if ((c === '\n' || c === '\r') && !inQuotes) {
-                    row.push(cell.trim());
-                    if (row.some(x => x)) rows.push(row); // End of row (skip empty)
-                    row = []; cell = '';
-                    if (c === '\r' && nc === '\n') i++; // Skip \n in \r\n
-                }
-                else cell += c;
-            }
-            if (cell || row.length) { row.push(cell.trim()); rows.push(row); }
-            return rows;
-        };
-
-        // Fetch data via public CSV export URL with localStorage caching
+        // Fetch data via Google Sheets API v4
         const fetchSheetData = async (sheetName) => {
-            const cacheKey = `sns_sheet_csv_v2_${sheetName}`; // v2: includes academic_year column
+            const cacheKey = `sns_sheet_api_${sheetName}`;
             try {
                 const cached = localStorage.getItem(cacheKey);
                 if (cached) {
                     const { data, timestamp } = JSON.parse(cached);
                     if (Date.now() - timestamp < SHEET_CONFIG.cacheTime) return { data, fromCache: true };
                 }
-            } catch (e) { /* fallback to fetch */ }
+            } catch (e) { }
 
-            const url = `https://docs.google.com/spreadsheets/d/${SHEET_CONFIG.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_CONFIG.spreadsheetId}/values/${encodeURIComponent(sheetName)}?key=${SHEET_CONFIG.apiKey}`;
+
             const res = await fetch(url);
-            if (!res.ok) throw new Error(`Sheets fetch error: ${res.status}`);
+            if (!res.ok) throw new Error(`Google API Error: ${res.status}`);
 
-            const text = await res.text();
-            const rows = parseCSV(text);
-            if (rows.length < 2) return { data: [], fromCache: false };
+            const json = await res.json();
+            const rows = json.values;
 
-            // Convert rows to array of objects
-            const headers = rows[0].map(h => h.replace(/^"|"$/g, '')); // Strip quotes
+            if (!rows || rows.length < 2) return { data: [], fromCache: false };
+
+            // Convert rows -> objects using header row
+            const headers = rows[0];
             const data = rows.slice(1).map(row => {
                 const obj = {};
-                headers.forEach((h, i) => {
-                    const val = row[i];
-                    obj[h] = val ? val.replace(/^"|"$/g, '') : '';
-                });
+                headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
                 return obj;
             });
 
