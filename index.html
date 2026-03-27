@@ -111,11 +111,15 @@
             return map;
         };
 
+        // Map sheet college_id values to app college IDs
+        const COLLEGE_ID_MAP = {};
+
         const parsePlacementStats = (rows) => {
             const obj = {};
             rows.forEach(r => {
-                if (!obj[r.college_id]) obj[r.college_id] = {};
-                obj[r.college_id][r.academic_year] = {
+                const cid = COLLEGE_ID_MAP[r.college_id] || r.college_id;
+                if (!obj[cid]) obj[cid] = {};
+                obj[cid][r.academic_year] = {
                     h: r.highest_package, a: r.average_package, m: r.median_package,
                     p: parseInt(r.students_placed) || 0, e: parseInt(r.students_eligible) || 0,
                     r: parseInt(r.recruiters_count) || 0, o: parseInt(r.total_offers) || 0,
@@ -171,7 +175,7 @@
                     snscnursing: parseInt(r.snscnursing) || 0,
                     snscahs: parseInt(r.snscahs) || 0,
                     snscphs: parseInt(r.snscphs) || 0,
-                    snscphysio: parseInt(r.snscp) || 0, // Map snscp header to physio
+                    snscp: parseInt(r.snscp) || 0,
                     c: r.band_color || '#C41230'
                 });
             });
@@ -232,32 +236,32 @@
             { id: "snsct", name: "SNS College of Technology", short: "SNSCT", code: "2726", accr: "NAAC A++ | Autonomous", email: "it.iipc@snsgroups.com", phone: "9629937863", poc: "Mr. P. Saravanan", color: "#C41230" },
             { id: "snsce", name: "SNS College of Engineering", short: "SNSCE", code: "2734", accr: "NAAC A++ | Autonomous", email: "placement@snsce.ac.in", phone: "", poc: "IIPC SNSCE", color: "#E63946" },
             { id: "drsnsrcas", name: "Dr.SNS Rajalakshmi College of Arts & Science", short: "Dr.SNSRCAS", code: "326", accr: "Autonomous", email: "arts.iipc@snsgroups.com", phone: "9994830099", poc: "IIPC Dr.SNSRCAS", color: "#F4845F" },
-            { id: "snscn", name: "SNS College of Nursing", short: "SNSCN", code: "879", accr: "Nursing Council", email: "nursing@snsgroups.com", phone: "", poc: "IIPC SNSCN", color: "#E6126D" },
-            { id: "snscahs", name: "SNS College of Allied Health Sciences", short: "SNSCAHS", code: "AHS", accr: "Health Sciences", email: "ahs@snsgroups.com", phone: "", poc: "IIPC SNSCAHS", color: "#1565C0" },
-            { id: "snscphysio", name: "SNS College of Physiotherapy", short: "SNSCPHYSIO", code: "PHYSIO", accr: "Physiotherapy", email: "physio@snsgroups.com", phone: "", poc: "IIPC SNSCPHYSIO", color: "#009688" },
-            { id: "snscphs", name: "SNS College of Pharmacy and Health Sciences", short: "SNSCPHS", code: "794", accr: "Pharmacy Council", email: "pharmacy@snsgroups.com", phone: "", poc: "IIPC SNSCPHS", color: "#673AB7" },
+            { id: "snscnursing", name: "SNS College of Nursing", short: "SNSCN", code: "879", accr: "Nursing Council", email: "nursing@snsgroups.com", phone: "", poc: "IIPC SNSCN", color: "#E6126D" },
+            { id: "snscahs", name: "SNS College of Allied and Health Science", short: "SNSCAHS", code: "AHS", accr: "Health Sciences", email: "ahs@snsgroups.com", phone: "", poc: "IIPC SNSCAHS", color: "#1565C0" },
+            { id: "snscphs", name: "SNS College of Physiotherapy", short: "SNSCPHYSIO", code: "PHYSIO", accr: "Physiotherapy", email: "physio@snsgroups.com", phone: "", poc: "IIPC SNSCPHYSIO", color: "#009688" },
+            { id: "snscp", name: "SNS College of Pharmacy", short: "SNSCP", code: "794", accr: "Pharmacy Council", email: "pharmacy@snsgroups.com", phone: "", poc: "IIPC SNSCP", color: "#673AB7" },
         ];
 
         const DEPTS = {
             snsct: ["All", "CSE", "IT", "AI & Data Science", "AI & ML", "ECE", "EEE", "Mech", "Civil", "Aero", "Mechatronics", "Bio-Medical", "Food Tech", "MBA", "MCA"],
             snsce: ["All", "CSE", "IT", "ECE", "EEE", "Mech", "Civil"],
             drsnsrcas: ["All", "BCA", "B.Sc CS", "B.Sc AI&DS", "B.Sc Full Stack", "B.Sc Cyber Security", "BBA", "B.Com", "B.Com CA", "MBA", "MCA", "M.Sc CS"],
-            snscn: ["All", "B.Sc Nursing"],
+            snscnursing: ["All", "B.Sc Nursing"],
             snscahs: ["All", "B.Sc AHS"],
-            snscphysio: ["All", "BPT"],
-            snscphs: ["All", "B.Pharm", "D.Pharm"],
+            snscphs: ["All", "BPT"],
+            snscp: ["All", "B.Pharm", "D.Pharm"],
         };
 
         const YEARS = ["2025-26", "2024-25", "2023-24", "2022-23", "2021-22", "2020-21"];
 
         const YS = {
             snsct: { "2025-26": { h: "53 LPA", a: "4.8 LPA", m: "4 LPA", p: 984, e: 1025, r: 150, o: 1100 }, "2024-25": { h: "21 LPA", a: "4.5 LPA", m: "3.6 LPA", p: 1645, e: 1713, r: 454, o: 2100 }, "2023-24": { h: "19 LPA", a: "4.2 LPA", m: "3.5 LPA", p: 1008, e: 1080, r: 244, o: 1300 }, "2022-23": { h: "13.5 LPA", a: "4 LPA", m: "3.2 LPA", p: 900, e: 1000, r: 200, o: 1100 }, "2021-22": { h: "12 LPA", a: "3.8 LPA", m: "3 LPA", p: 820, e: 950, r: 180, o: 950 }, "2020-21": { h: "10 LPA", a: "3.5 LPA", m: "2.8 LPA", p: 750, e: 900, r: 160, o: 850 } },
-            snsce: { "2025-26": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 }, "2024-25": { h: "21 LPA", a: "5 LPA", m: "7.8 LPA", p: 800, e: 900, r: 165, o: 1000 }, "2023-24": { h: "13.5 LPA", a: "4.5 LPA", m: "4 LPA", p: 650, e: 750, r: 140, o: 800 }, "2022-23": { h: "10 LPA", a: "4 LPA", m: "3.5 LPA", p: 550, e: 650, r: 120, o: 680 }, "2021-22": { h: "8 LPA", a: "3.6 LPA", m: "3 LPA", p: 480, e: 580, r: 100, o: 560 }, "2020-21": { h: "7 LPA", a: "3.2 LPA", m: "2.8 LPA", p: 400, e: 520, r: 85, o: 470 } },
-            drsnsrcas: { "2025-26": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 }, "2024-25": { h: "9 LPA", a: "3.5 LPA", m: "3 LPA", p: 500, e: 600, r: 100, o: 600 }, "2023-24": { h: "7 LPA", a: "3 LPA", m: "2.8 LPA", p: 420, e: 520, r: 80, o: 500 }, "2022-23": { h: "6 LPA", a: "2.8 LPA", m: "2.5 LPA", p: 350, e: 450, r: 65, o: 420 }, "2021-22": { h: "5 LPA", a: "2.5 LPA", m: "2.2 LPA", p: 300, e: 400, r: 55, o: 350 }, "2020-21": { h: "4.5 LPA", a: "2.3 LPA", m: "2 LPA", p: 250, e: 360, r: 45, o: 290 } },
-            snscn: { "2024-25": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 } },
-            snscahs: { "2024-25": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 } },
-            snscphysio: { "2024-25": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 } },
-            snscphs: { "2024-25": { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 } },
+            snsce: { "2025-26": { h: "24 LPA", a: "4.34 LPA", m: "4 LPA", p: 612, e: 656, r: 240, o: 646 }, "2024-25": { h: "21 LPA", a: "5 LPA", m: "7.8 LPA", p: 800, e: 900, r: 165, o: 1000 }, "2023-24": { h: "13.5 LPA", a: "4.5 LPA", m: "4 LPA", p: 650, e: 750, r: 140, o: 800 }, "2022-23": { h: "10 LPA", a: "4 LPA", m: "3.5 LPA", p: 550, e: 650, r: 120, o: 680 }, "2021-22": { h: "8 LPA", a: "3.6 LPA", m: "3 LPA", p: 480, e: 580, r: 100, o: 560 }, "2020-21": { h: "9 LPA", a: "3.4 LPA", m: "4 LPA", p: 400, e: 520, r: 85, o: 470 } },
+            drsnsrcas: { "2025-26": { h: "9 LPA", a: "2.92 LPA", m: "2.28 LPA", p: 1352, e: 1717, r: 116, o: 1769 }, "2024-25": { h: "9 LPA", a: "2.51 LPA", m: "2.34 LPA", p: 1334, e: 1584, r: 101, o: 1734 }, "2023-24": { h: "6.1 LPA", a: "2.63 LPA", m: "2.50 LPA", p: 1173, e: 1569, r: 81, o: 1220 }, "2022-23": { h: "7.25 LPA", a: "2.10 LPA", m: "1.88 LPA", p: 952, e: 1316, r: 53, o: 1103 }, "2021-22": { h: "3.50 LPA", a: "2 LPA", m: "1.86 LPA", p: 549, e: 863, r: 51, o: 706 }, "2020-21": { h: "5.8 LPA", a: "1.72 LPA", m: "1.8 LPA", p: 669, e: 961, r: 74, o: 919 } },
+            snscnursing: { "2025-26": { h: "2.64 LPA", a: "2.38 LPA", m: "2.38 LPA", p: 36, e: 56, r: 4, o: 36 }, "2024-25": { h: "2.52 LPA", a: "2.28 LPA", m: "2.28 LPA", p: 30, e: 32, r: 4, o: 30 } },
+            snscahs: { "2025-26": { h: "5 LPA", a: "5 LPA", m: "7.8 LPA", p: 40, e: 45, r: 20, o: 100 }, "2024-25": { h: "3.6 LPA", a: "1.8 LPA", m: "2.16 LPA", p: 52, e: 68, r: 22, o: 0 }, "2023-24": { h: "2.4 LPA", a: "1.5 LPA", m: "1.8 LPA", p: 26, e: 31, r: 13, o: 0 } },
+            snscphs: { "2024-25": { h: "3.5 LPA", a: "2.5 LPA", m: "2.4 LPA", p: 27, e: 27, r: 7, o: 35 } },
+            snscp: { "2025-26": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129 }, "2024-25": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129 }, "2023-24": { h: "7.5 LPA", a: "4.05 LPA", m: "3.375 LPA", p: 53, e: 53, r: 21, o: 84 }, "2022-23": { h: "6.5 LPA", a: "4.01 LPA", m: "3.75 LPA", p: 65, e: 68, r: 21, o: 90 } },
         };
 
 
@@ -453,12 +457,41 @@
             }, [loadFromSheets]);
 
             useEffect(() => { const t = setInterval(() => setTIdx(p => (p + 1) % 8), 4500); return () => clearInterval(t) }, []);
-            useEffect(() => { setDept("All"); setSPage(1); }, [col]);
+            useEffect(() => {
+                setDept("All");
+                setSPage(1);
+                setYr(getBestYear(col));
+                // Snap salary year to latest available for this college
+                const firstSalYr = availableSalaryYears[0];
+                if (firstSalYr && (!salaryYr || !availableSalaryYears.includes(salaryYr))) {
+                    setSalaryYr(firstSalYr);
+                }
+            }, [col]);
             useEffect(() => { setSPage(1); setVPage(1); }, [yr, search, catF, dept]);
             useEffect(() => { setSalaryYr(yr); }, [yr]);
 
             // ═══ Computed values using dynamic state ═══
             const depts = col === "all" ? ["All"] : deptMap[col] || ["All"];
+            // Derive available years for the selected college from live sheet data
+            const availableYears = (() => {
+                if (col === "all") {
+                    // Filter years that have data for at least one college
+                    const ys = YEARS.filter(y => {
+                        return Object.keys(yearlyStats).some(k => {
+                            if (k.toLowerCase() === 'all' || k.toLowerCase() === 'overall') return false;
+                            const s = yearlyStats[k]?.[y];
+                            return s && (s.p > 0 || s.h !== "-" || s.r > 0 || s.o > 0);
+                        });
+                    });
+                    return ys.length > 0 ? ys : [YEARS[0]];
+                }
+                const colData = yearlyStats[col] || {};
+                const ys = YEARS.filter(y => {
+                    const s = colData[y];
+                    return s && (s.p > 0 || s.h !== "-" || s.r > 0 || s.o > 0);
+                });
+                return ys.length > 0 ? ys : [YEARS[0]];
+            })();
             const sy = (y) => {
                 if (col === "all") {
                     const ks = Object.keys(yearlyStats).filter(k => k.toLowerCase() !== 'all' && k.toLowerCase() !== 'overall');
@@ -524,8 +557,12 @@
                 return matchCol && matchCat && matchDept && matchSearch && matchYear;
             });
 
+            // Map college filter id to salary band field name
+            const colToField = { snsct: 'snsct', snsce: 'snsce', drsnsrcas: 'drsnsrcas', snscnursing: 'snscnursing', snscahs: 'snscahs', snscphs: 'snscphs', snscp: 'snscp' };
+
             // Compute salary bands for the currently selected salary year
-            const availableSalaryYears = Object.keys(salaryBandsByYear).filter(k => k !== 'all').sort().reverse();
+            const availableSalaryYears = YEARS || [];
+
             const salaryBands = (() => {
                 if (salaryBandsByYear[salaryYr]) return salaryBandsByYear[salaryYr];
                 if (salaryBandsByYear[yr]) return salaryBandsByYear[yr];
@@ -533,8 +570,6 @@
                 const keys = Object.keys(salaryBandsByYear);
                 return keys.length > 0 ? salaryBandsByYear[keys[0]] : [];
             })();
-            // Map college filter id to salary band field name
-            const colToField = { snsct: 'snsct', snsce: 'snsce', drsnsrcas: 'drsnsrcas', snscn: 'snscnursing', snscahs: 'snscahs', snscphs: 'snscphs', snscphysio: 'snscphysio' };
 
             const navItems = [{ id: "home", icon: "🏠", l: "Home" }, { id: "dashboard", icon: "📊", l: "Dashboard" }, { id: "colleges", icon: "🏫", l: "Colleges & Depts" }, { id: "drives", icon: "🏢", l: "Company Drives" }, { id: "salary", icon: "💰", l: "Salary Analysis" }, { id: "students", icon: "🎓", l: "Placed Students" }, { id: "training", icon: "📚", l: "Training" }, { id: "upcoming", icon: "📅", l: "Upcoming" }, { id: "facilities", icon: "🏗️", l: "Facilities" }];
             const Badge = ({ children, bg, fg }) => <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 100, fontSize: 10, fontWeight: 600, background: bg, color: fg }}>{children}</span>;
@@ -643,8 +678,12 @@
                                 <option value="all">All Institutions</option>
                                 {colleges.map(c => <option key={c.id} value={c.id}>{c.short}</option>)}
                             </select>
-                            {col !== "all" && <select value={dept} onChange={e => setDept(e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}>{depts.map(d => <option key={d} value={d}>{d}</option>)}</select>}
-                            <select value={yr} onChange={e => setYr(e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}>{YEARS.map(y => <option key={y} value={y}>{y}</option>)}</select>
+                            {col !== "all" && pg !== "dashboard" && pg !== "colleges" && (
+                                <select value={dept} onChange={e => setDept(e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}>
+                                    {depts.map(d => <option key={d} value={d}>{d}</option>)}
+                                </select>
+                            )}
+                            <select value={yr} onChange={e => setYr(e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer" }}>{availableYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
                             <SyncBadge />
                             <a href="mailto:director.iipc.sns@gmail.com" style={{ background: R, color: "white", padding: "7px 16px", borderRadius: 8, fontSize: 11, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>Recruit Now</a>
                         </div>
@@ -834,7 +873,7 @@
                                                 <tr><th>Year</th><th>Placed</th><th>Highest</th><th>Avg</th><th>Recruiters</th><th>Rate</th></tr>
                                             </thead>
                                             <tbody>
-                                                {YEARS.map((y, i) => {
+                                                {availableYears.map((y, i) => {
                                                     const s = sy(y);
                                                     return (
                                                         <tr key={i} style={{ background: y === yr ? `${R}06` : "transparent" }}>
@@ -859,7 +898,7 @@
                                             onChange={e => setSalaryYr(e.target.value)}
                                             style={{ padding: "5px 10px", borderRadius: 8, border: `1px solid ${R}40`, fontSize: 12, fontFamily: "'Outfit'", cursor: "pointer", color: R, fontWeight: 600, background: `${R}08`, outline: "none" }}
                                         >
-                                            {(availableSalaryYears.length > 0 ? availableSalaryYears : YEARS).map(y => <option key={y} value={y}>{y}</option>)}
+                                            {availableSalaryYears.map(y => <option key={y} value={y}>{y}</option>)}
                                         </select>
                                     </div>
                                     {salaryBands.length === 0
@@ -869,7 +908,7 @@
                                             const getVal = (b) => {
                                                 if (col !== "all") return (b[fieldName] || 0);
                                                 // Sum all college values for "all"
-                                                return (b.snsct || 0) + (b.snsce || 0) + (b.drsnsrcas || 0) + (b.snscnursing || 0) + (b.snscahs || 0) + (b.snscphs || 0) + (b.snscphysio || 0);
+                                                return (b.snsct || 0) + (b.snsce || 0) + (b.drsnsrcas || 0) + (b.snscnursing || 0) + (b.snscahs || 0) + (b.snscphs || 0) + (b.snscp || 0);
                                             };
                                             const allVals = salaryBands.map(b => getVal(b));
                                             const mx = Math.max(...allVals, 1);
