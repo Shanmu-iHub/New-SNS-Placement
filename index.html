@@ -238,7 +238,7 @@
             { id: "drsnsrcas", name: "Dr.SNS Rajalakshmi College of Arts & Science", short: "Dr.SNSRCAS", code: "326", accr: "Autonomous", email: "arts.iipc@snsgroups.com", phone: "9994830099", poc: "IIPC Dr.SNSRCAS", color: "#F4845F" },
             { id: "snscnursing", name: "SNS College of Nursing", short: "SNSCN", code: "879", accr: "Nursing Council", email: "nursing@snsgroups.com", phone: "", poc: "IIPC SNSCN", color: "#E6126D" },
             { id: "snscahs", name: "SNS College of Allied and Health Science", short: "SNSCAHS", code: "AHS", accr: "Health Sciences", email: "ahs@snsgroups.com", phone: "", poc: "IIPC SNSCAHS", color: "#1565C0" },
-            { id: "snscphs", name: "SNS College of Physiotherapy", short: "SNSCPHYSIO", code: "PHYSIO", accr: "Physiotherapy", email: "physio@snsgroups.com", phone: "", poc: "IIPC SNSCPHYSIO", color: "#009688" },
+            { id: "snscphs", name: "SNS College of Physiotheraphy", short: "SNSCPHYSIO", code: "PHYSIO", accr: "Physiotherapy", email: "physio@snsgroups.com", phone: "", poc: "IIPC SNSCPHYSIO", color: "#009688" },
             { id: "snscp", name: "SNS College of Pharmacy", short: "SNSCP", code: "794", accr: "Pharmacy Council", email: "pharmacy@snsgroups.com", phone: "", poc: "IIPC SNSCP", color: "#673AB7" },
         ];
 
@@ -523,18 +523,17 @@
                 let tp = 0, tr = 0, to = 0, te = 0, maxH = 0;
                 let avL = [], mvL = [];
                 ks.forEach(k => {
-                    YEARS.forEach(y => {
-                        const s = yearlyStats[k][y];
-                        if (s) {
-                            tp += (s.p || 0); tr += (s.r || 0); to += (s.o || 0); te += (s.e || 0);
-                            const h = parseFloat(String(s.h).replace(/[^0-9.]/g, "")) || 0;
-                            if (h > maxH) maxH = h;
-                            const a = parseFloat(String(s.a).replace(/[^0-9.]/g, "")) || 0;
-                            if (a > 0) avL.push(a);
-                            const m = parseFloat(String(s.m).replace(/[^0-9.]/g, "")) || 0;
-                            if (m > 0) mvL.push(m);
-                        }
-                    });
+                    const latestY = YEARS.find(y => yearlyStats[k][y]);
+                    const s = latestY ? yearlyStats[k][latestY] : null;
+                    if (s) {
+                        tp += (s.p || 0); tr += (s.r || 0); to += (s.o || 0); te += (s.e || 0);
+                        const h = parseFloat(String(s.h).replace(/[^0-9.]/g, "")) || 0;
+                        if (h > maxH) maxH = h;
+                        const a = parseFloat(String(s.a).replace(/[^0-9.]/g, "")) || 0;
+                        if (a > 0) avL.push(a);
+                        const m = parseFloat(String(s.m).replace(/[^0-9.]/g, "")) || 0;
+                        if (m > 0) mvL.push(m);
+                    }
                 });
                 const agA = avL.length ? (avL.reduce((s, v) => s + v, 0) / avL.length).toFixed(1) : "-";
                 const agM = mvL.length ? (mvL.reduce((s, v) => s + v, 0) / mvL.length).toFixed(1) : "-";
@@ -716,7 +715,7 @@
                                                 <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 3, background: c.color }} />
                                                 <div style={{ position: "absolute", inset: 0, background: `radial-gradient(120px circle at top right, ${c.color}20, transparent)`, pointerEvents: "none" }} />
                                                 <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Code: {c.code}</div>
-                                                <div style={{ fontSize: 16, fontWeight: 800, color: "white", marginBottom: 14 }}>{c.short}</div>
+                                                <div style={{ fontSize: 13, fontWeight: 800, color: "white", marginBottom: 14, lineHeight: 1.3 }}>{c.name}</div>
                                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 10 }}>
                                                     <div>
                                                         <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
@@ -819,7 +818,7 @@
                                                 { n: "Dr. SNS Rajalakshmi College (Dr.SNSRCAS)", l: "drsnsrcas.ac.in" },
                                                 { n: "SNS College of Pharmacy and Health Sciences", l: "snscphs.org" },
                                                 { n: "SNS College of Nursing", l: "snscnursing.org" },
-                                                { n: "SNS College of Physiotherapy", l: "snscphysio.org" },
+                                                { n: "SNS College of Physiotheraphy", l: "snscphysio.org" },
                                                 { n: "SNS College of Allied Health Science", l: "snscahs.org" },
                                             ].map(item => (
                                                 <a key={item.n} href={`https://${item.l}`} target="_blank" style={{ fontSize: 13, color: "rgba(255,255,255,.6)", textDecoration: "none", transition: "color .2s" }} className="hover-text">{item.n}</a>
