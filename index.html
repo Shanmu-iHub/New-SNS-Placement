@@ -57,6 +57,7 @@
                 facilities: 'Facilities',
                 placedStudents: 'Placed_Students',
                 highlights: 'Placement_Highlights',
+                topCompanies: 'Top Package Companies',
             }
         };
 
@@ -127,6 +128,10 @@
             });
             return obj;
         };
+
+        const parseTopCompanies = (rows) => rows.map(r => ({
+            c: r.Company, p: r.Package, y: r['Academic Year'] || r.Year, cl: r.College, ct: r.Category
+        }));
 
         // Helper: derive academic year (Jun-May) from a date string
         const getAcademicYear = (dateStr) => {
@@ -401,6 +406,18 @@
             const [facilityData, setFacilityData] = useState(FAC);
             const [placedData, setPlacedData] = useState([{ n: "Vipin", co: "Dhvani R&D", r: "R&D Engineer", c: "SNSCT" }, { n: "46 Students", co: "Accenture", r: "₹4-7 LPA", c: "All SNS" }, { n: "37 Students", co: "Cognizant", r: "₹4-6 LPA", c: "All SNS" }, { n: "8 Students", co: "Intellipaat", r: "₹9 LPA", c: "SNSCT+SNSCE" }, { n: "56 Students", co: "C.R.I. Pumps", r: "Core Eng", c: "SNSCE" }, { n: "21 Students", co: "L.G.Balakrishnan", r: "Core Eng", c: "SNSCE" }, { n: "15 MBA Students", co: "Rupeek", r: "₹4 LPA", c: "All SNS" }, { n: "120 Students", co: "TCS", r: "₹3.6-7 LPA", c: "All SNS" }]);
             const [highlightData, setHighlightData] = useState(null);
+            const [topCompaniesData, setTopCompaniesData] = useState([
+                { c: "ServiceNow", p: "₹32 LPA", y: "2023-24", cl: "SNSCT", ct: "IT Product" },
+                { c: "Juspay", p: "₹10-21 LPA", y: "2024-25", cl: "SNSCE", ct: "IT Product" },
+                { c: "Cadence", p: "₹15 LPA", y: "2023-24", cl: "SNSCT", ct: "Core (VLSI)" },
+                { c: "Zoho", p: "₹10-14 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" },
+                { c: "Sobha", p: "₹13.5 LPA", y: "2023-24", cl: "SNSCT", ct: "Core" },
+                { c: "Amazon", p: "₹8-15 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" },
+                { c: "PayPal", p: "₹8-12 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" },
+                { c: "Deloitte", p: "₹7-12 LPA", y: "2024-25", cl: "SNSCT", ct: "Consulting" },
+                { c: "Intellipaat", p: "₹9 LPA", y: "2024-25", cl: "SNSCT+SNSCE", ct: "IT Services" },
+                { c: "KAAR Tech", p: "₹6-9 LPA", y: "2024-25", cl: "SNSCT", ct: "SAP" }
+            ]);
 
             // ═══ Sync Status ═══
             const [syncStatus, setSyncStatus] = useState({ loading: false, lastSync: null, error: null, source: 'defaults' });
@@ -423,6 +440,7 @@
                         fetchSheetData(SHEET_CONFIG.sheets.facilities),
                         fetchSheetData(SHEET_CONFIG.sheets.placedStudents),
                         fetchSheetData(SHEET_CONFIG.sheets.highlights),
+                        fetchSheetData(SHEET_CONFIG.sheets.topCompanies),
                     ]);
 
                     const get = (i) => results[i].status === 'fulfilled' && results[i].value.data.length > 0 ? results[i].value.data : null;
@@ -439,6 +457,7 @@
                     if (get(9)) setFacilityData(parseFacilities(get(9)));
                     if (get(10)) setPlacedData(parsePlacedStudents(get(10)));
                     if (get(11)) setHighlightData(parseHighlights(get(11)));
+                    if (get(12)) setTopCompaniesData(parseTopCompanies(get(12)));
 
                     const anyFromCache = results.some(r => r.status === 'fulfilled' && r.value.fromCache);
                     setSyncStatus({ loading: false, lastSync: new Date(), error: null, source: anyFromCache ? 'cache' : 'live' });
@@ -987,7 +1006,7 @@
                                 })()}
                             </div>)}
 
-                            {pg === "salary" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Salary Analysis</h2><div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Package Distribution by College ({yr})</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Band</th><th>SNSCT</th>{yr !== "2025-26" && <th>SNSCE</th>}<th>Dr.SNSRCAS</th><th>Nursing</th><th>AHS</th><th>Pharmacy</th><th>Physio</th><th>Total</th></tr></thead><tbody>{salaryBands.map((b, i) => { const snsctVal = yr === "2025-26" ? b.snsct + b.snsce : b.snsct; const total = (b.snsct || 0) + (b.snsce || 0) + (b.drsnsrcas || 0) + (b.snscnursing || 0) + (b.snscahs || 0) + (b.snscphs || 0) + (b.snscphysio || 0); return <tr key={i}><td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td><td>{snsctVal}</td>{yr !== "2025-26" && <td>{b.snsce}</td>}<td>{b.drsnsrcas}</td><td>{b.snscnursing}</td><td>{b.snscahs}</td><td>{b.snscphs}</td><td>{b.snscphysio}</td><td style={{ fontWeight: 700 }}>{total}</td></tr> })}</tbody></table></div></div><div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top Package Companies</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Company</th><th>Package</th><th>Year</th><th>College</th><th>Category</th></tr></thead><tbody>{[{ c: "ServiceNow", p: "₹32 LPA", y: "2023-24", cl: "SNSCT", ct: "IT Product" }, { c: "Juspay", p: "₹10-21 LPA", y: "2024-25", cl: "SNSCE", ct: "IT Product" }, { c: "Cadence", p: "₹15 LPA", y: "2023-24", cl: "SNSCT", ct: "Core (VLSI)" }, { c: "Zoho", p: "₹10-14 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Sobha", p: "₹13.5 LPA", y: "2023-24", cl: "SNSCT", ct: "Core" }, { c: "Amazon", p: "₹8-15 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "PayPal", p: "₹8-12 LPA", y: "2024-25", cl: "SNSCT", ct: "IT Product" }, { c: "Deloitte", p: "₹7-12 LPA", y: "2024-25", cl: "SNSCT", ct: "Consulting" }, { c: "Intellipaat", p: "₹9 LPA", y: "2024-25", cl: "SNSCT+SNSCE", ct: "IT Services" }, { c: "KAAR Tech", p: "₹6-9 LPA", y: "2024-25", cl: "SNSCT", ct: "SAP" }].map((r, i) => <tr key={i}><td style={{ fontWeight: 600 }}>{r.c}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace" }}>{r.p}</td><td>{r.y}</td><td>{r.cl}</td><td style={{ fontSize: 12, color: "#888" }}>{r.ct}</td></tr>)}</tbody></table></div></div></div>)}
+                            {pg === "salary" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Salary Analysis</h2><div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Package Distribution by College ({yr})</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Band</th><th>SNSCT</th>{yr !== "2025-26" && <th>SNSCE</th>}<th>Dr.SNSRCAS</th><th>Nursing</th><th>AHS</th><th>Pharmacy</th><th>Physio</th><th>Total</th></tr></thead><tbody>{salaryBands.map((b, i) => { const snsctVal = yr === "2025-26" ? b.snsct + b.snsce : b.snsct; const total = (b.snsct || 0) + (b.snsce || 0) + (b.drsnsrcas || 0) + (b.snscnursing || 0) + (b.snscahs || 0) + (b.snscphs || 0) + (b.snscphysio || 0); return <tr key={i}><td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td><td>{snsctVal}</td>{yr !== "2025-26" && <td>{b.snsce}</td>}<td>{b.drsnsrcas}</td><td>{b.snscnursing}</td><td>{b.snscahs}</td><td>{b.snscphs}</td><td>{b.snscphysio}</td><td style={{ fontWeight: 700 }}>{total}</td></tr> })}</tbody></table></div></div><div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top Package Companies</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Company</th><th>Package</th><th>Year</th><th>College</th><th>Category</th></tr></thead><tbody>{topCompaniesData.map((r, i) => <tr key={i}><td style={{ fontWeight: 600 }}>{r.c}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace" }}>{r.p}</td><td>{r.y}</td><td>{r.cl}</td><td style={{ fontSize: 12, color: "#888" }}>{r.ct}</td></tr>)}</tbody></table></div></div></div>)}
 
                             {pg === "students" && (<div>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
