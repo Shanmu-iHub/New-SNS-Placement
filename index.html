@@ -705,7 +705,7 @@
                                     <button onClick={() => setPg("drives")} style={{ background: "rgba(255,255,255,.08)", color: "white", border: "1px solid rgba(255,255,255,.2)", padding: "14px 28px", borderRadius: 12, fontSize: 14, fontWeight: 500, cursor: "pointer", backdropFilter: "blur(10px)", fontFamily: "'Outfit'" }}>View Company Drives</button>
                                 </div>
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 40 }}>
-                                    {colleges.map((c, i) => {
+                                    {colleges.filter(c => c.id !== "snsce").map((c, i) => {
                                         const displayYear = getBestYear(c.id);
                                         const s = yearlyStats[c.id]?.[displayYear] || { h: "-", p: 0, e: 1 };
                                         const hStr = s.h ? String(s.h) : "-";
