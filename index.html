@@ -950,7 +950,35 @@
                                 </div>
                             </div>)}
 
-                            {pg === "colleges" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Colleges & Departments</h2>{colleges.map(c => { const s = yearlyStats[c.id]?.[yr] || { h: "-", p: 0, e: 1 }; return (<div key={c.id} className="card" style={{ padding: 24, marginBottom: 16, borderLeft: `4px solid ${c.color}`, cursor: "pointer" }} onClick={() => { setCol(c.id); setPg("dashboard") }}><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 14 }}><div><h3 style={{ fontSize: 17, fontWeight: 700 }}>{c.name}</h3><div style={{ fontSize: 12, color: "#999" }}>{c.accr} · Code: {c.code} · {c.poc}</div><div style={{ fontSize: 12, color: "#999" }}>📧 {c.email}{c.phone && ` · 📞 ${c.phone}`}</div></div><div style={{ display: "flex", gap: 10 }}><StatBox v={s.h} l="Highest" /><StatBox v={s.p.toLocaleString()} l="Placed" /><StatBox v={Math.round(s.p / s.e * 100) + "%"} l="Rate" c="#4ECDC4" /></div></div><div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{(deptMap[c.id] || []).filter(d => d !== "All").map(d => (<span key={d} onClick={e => { e.stopPropagation(); setCol(c.id); setDept(d); setPg("dashboard") }} style={{ padding: "4px 12px", borderRadius: 100, background: "#f0f0f0", fontSize: 11, fontWeight: 500, color: "#555", cursor: "pointer", transition: "all .2s" }}>{d}</span>))}</div></div>) })}</div>)}
+                            {pg === "colleges" && (
+                                <div>
+                                    <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Colleges & Departments</h2>
+                                    {colleges.filter(c => !(yr === "2025-26" && c.id === "snsce")).map(c => {
+                                        const s = yearlyStats[c.id]?.[yr] || { h: "-", p: 0, e: 1 };
+                                        return (
+                                            <div key={c.id} className="card" style={{ padding: 24, marginBottom: 16, borderLeft: `4px solid ${c.color}`, cursor: "pointer" }} onClick={() => { setCol(c.id); setPg("dashboard") }}>
+                                                <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+                                                    <div>
+                                                        <h3 style={{ fontSize: 17, fontWeight: 700 }}>{c.name}</h3>
+                                                        <div style={{ fontSize: 12, color: "#999" }}>{c.accr} · Code: {c.code} · {c.poc}</div>
+                                                        <div style={{ fontSize: 12, color: "#999" }}>📧 {c.email}{c.phone && ` · 📞 ${c.phone}`}</div>
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 10 }}>
+                                                        <StatBox v={s.h} l="Highest" />
+                                                        <StatBox v={s.p.toLocaleString()} l="Placed" />
+                                                        <StatBox v={Math.round(s.p / s.e * 100) + "%"} l="Rate" c="#4ECDC4" />
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                                    {(deptMap[c.id] || []).filter(d => d !== "All").map(d => (
+                                                        <span key={d} onClick={e => { e.stopPropagation(); setCol(c.id); setDept(d); setPg("dashboard") }} style={{ padding: "4px 12px", borderRadius: 100, background: "#f0f0f0", fontSize: 11, fontWeight: 500, color: "#555", cursor: "pointer", transition: "all .2s" }}>{d}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
 
                             {pg === "drives" && (<div>
                                 <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
