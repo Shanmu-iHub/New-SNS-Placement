@@ -391,7 +391,10 @@
             const [vPage, setVPage] = useState(1);
             const [salaryYr, setSalaryYr] = useState("2025-26");
 
-            const getBestYear = useCallback((id) => (id || "").toLowerCase() === 'snsct' || id === 'all' ? '2025-26' : '2024-25', []);
+            const getBestYear = useCallback((id) => {
+                // Return 2025-26 as the default best year for all colleges for the current cycle
+                return '2025-26';
+            }, []);
 
             // ═══ Dynamic Data State (initialized with hardcoded defaults) ═══
             const [colleges, setColleges] = useState(COLLEGES);
@@ -542,9 +545,16 @@
                 const ks = Object.keys(yearlyStats).filter(k => k.toLowerCase() !== 'all' && k.toLowerCase() !== 'overall');
                 let tp = 0, tr = 0, to = 0, te = 0, maxH = 0;
                 let avL = [], mvL = [];
+                const targetYear = "2025-26";
+
                 ks.forEach(k => {
-                    const latestY = YEARS.find(y => yearlyStats[k][y]);
-                    const s = latestY ? yearlyStats[k][latestY] : null;
+                    // Try to get data for 2025-26 first, then fall back to latest available if not found
+                    let s = yearlyStats[k]?.[targetYear];
+                    if (!s || (s.p === 0 && s.r === 0)) {
+                        const latestY = YEARS.find(y => yearlyStats[k][y] && (yearlyStats[k][y].p > 0 || yearlyStats[k][y].r > 0));
+                        s = latestY ? yearlyStats[k][latestY] : null;
+                    }
+
                     if (s) {
                         tp += (s.p || 0); tr += (s.r || 0); to += (s.o || 0); te += (s.e || 0);
                         const h = parseFloat(String(s.h).replace(/[^0-9.]/g, "")) || 0;
