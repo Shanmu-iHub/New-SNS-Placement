@@ -253,6 +253,7 @@
             const skillH = getHeader(['skill', 'requirement', 'detail', 'description']);
             const imgH = getHeader(['image', 'logo', 'photo']);
             const linkH = getHeader(['link', 'apply', 'url']);
+            const modeH = getHeader(['mode', 'type', 'nature']);
 
             return data.map((r, i) => {
                 let img = r[imgH] || "tarento_logo.png";
@@ -269,7 +270,8 @@
                     loc: r[locH] || "Bangalore",
                     img: img,
                     skills: r[skillH] || "No details provided.",
-                    link: r[linkH] || "#"
+                    link: r[linkH] || "#",
+                    mode: r[modeH] || "Full Time"
                 };
             });
         };
@@ -1233,7 +1235,7 @@
                                                     <i className="fas fa-map-marker-alt"></i> {item.loc}
                                                 </div>
                                                 <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #f0f0f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                                    <Badge bg={`${R}10`} fg={R}>Remote Available</Badge>
+                                                    <Badge bg={`${R}10`} fg={R}>{item.mode || "Internship"}</Badge>
                                                     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                                                         <button onClick={(e) => handleShare(e, item, 'internship')} style={{ background: "#f0f0f0", border: "none", width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666" }} title="Share Internship">
                                                             <i className="fas fa-share-alt" style={{ fontSize: 12 }}></i>
@@ -1267,7 +1269,7 @@
                                                     <i className="fas fa-map-marker-alt"></i> {item.loc}
                                                 </div>
                                                 <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #f0f0f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                                    <Badge bg="#E8F5E9" fg="#2E7D32">Full Time</Badge>
+                                                    <Badge bg="#E8F5E9" fg="#2E7D32">{item.mode || "Full Time"}</Badge>
                                                     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                                                         <button onClick={(e) => handleShare(e, item, 'job')} style={{ background: "#f0f0f0", border: "none", width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666" }} title="Share Job">
                                                             <i className="fas fa-share-alt" style={{ fontSize: 12 }}></i>
