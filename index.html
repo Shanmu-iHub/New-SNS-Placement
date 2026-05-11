@@ -178,6 +178,7 @@
             rows.forEach(r => {
                 const ay = (r.academic_year || '').trim() || 'all';
                 if (!grouped[ay]) grouped[ay] = [];
+                const phsVal = parseInt(r.snscphs) || parseInt(r.snscphysio) || 0;
                 grouped[ay].push({
                     range: r.salary_band,
                     snsct: parseInt(r.snsct_count) || 0,
@@ -185,7 +186,7 @@
                     drsnsrcas: parseInt(r.drsnsrcas_count) || 0,
                     snscnursing: parseInt(r.snscnursing) || 0,
                     snscahs: parseInt(r.snscahs) || 0,
-                    snscphs: parseInt(r.snscphs) || 0,
+                    snscphs: phsVal,
                     snscp: parseInt(r.snscp) || 0,
                     c: r.band_color || '#C41230'
                 });
@@ -1140,8 +1141,49 @@
                                 })()}
                             </div>)}
 
-                            {pg === "salary" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Salary Analysis</h2><div className="card" style={{ padding: 24, marginBottom: 20 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Package Distribution by College ({yr})</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Band</th><th>SNSCT</th>{yr !== "2025-26" && <th>SNSCE</th>}<th>Dr.SNSRCAS</th><th>Nursing</th><th>AHS</th><th>Pharmacy</th><th>Physio</th><th>Total</th></tr></thead><tbody>{salaryBands.map((b, i) => { const snsctVal = yr === "2025-26" ? b.snsct + b.snsce : b.snsct; const total = (b.snsct || 0) + (b.snsce || 0) + (b.drsnsrcas || 0) + (b.snscnursing || 0) + (b.snscahs || 0) + (b.snscphs || 0) + (b.snscphysio || 0); return <tr key={i}><td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td><td>{snsctVal}</td>{yr !== "2025-26" && <td>{b.snsce}</td>}<td>{b.drsnsrcas}</td><td>{b.snscnursing}</td><td>{b.snscahs}</td><td>{b.snscphs}</td><td>{b.snscphysio}</td><td style={{ fontWeight: 700 }}>{total}</td></tr> })}</tbody></table></div></div><div className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top Package Companies</h3><div style={{ overflowX: "auto" }}><table className="tbl"><thead><tr><th>Company</th><th>Package</th><th>Year</th><th>College</th><th>Category</th></tr></thead><tbody>{topCompaniesData.map((r, i) => <tr key={i}><td style={{ fontWeight: 600 }}>{r.c}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace" }}>{r.p}</td><td>{r.y}</td><td>{r.cl}</td><td style={{ fontSize: 12, color: "#888" }}>{r.ct}</td></tr>)}</tbody></table></div></div></div>)}
-
+                            {pg === "salary" && (<div>
+                                <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Salary Analysis</h2>
+                                <div className="card" style={{ padding: 24, marginBottom: 20 }}>
+                                    <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Package Distribution by College ({yr})</h3>
+                                    <div style={{ overflowX: "auto" }}>
+                                        <table className="tbl">
+                                            <thead>
+                                                <tr><th>Band</th><th>SNSCT</th>{yr !== "2025-26" && <th>SNSCE</th>}<th>Dr.SNSRCAS</th><th>Nursing</th><th>AHS</th><th>Pharmacy</th><th>Physio</th><th>Total</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                {salaryBands.map((b, i) => {
+                                                    const snsctVal = yr === "2025-26" ? (b.snsct || 0) + (b.snsce || 0) : (b.snsct || 0);
+                                                    const total = (b.snsct || 0) + (b.snsce || 0) + (b.drsnsrcas || 0) + (b.snscnursing || 0) + (b.snscahs || 0) + (b.snscphs || 0) + (b.snscp || 0);
+                                                    return (
+                                                        <tr key={i}>
+                                                            <td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td>
+                                                            <td>{snsctVal}</td>
+                                                            {yr !== "2025-26" && <td>{b.snsce}</td>}
+                                                            <td>{b.drsnsrcas}</td>
+                                                            <td>{b.snscnursing}</td>
+                                                            <td>{b.snscahs}</td>
+                                                            <td>{b.snscp}</td>
+                                                            <td>{b.snscphs}</td>
+                                                            <td style={{ fontWeight: 700 }}>{total}</td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div className="card" style={{ padding: 24 }}>
+                                    <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Top Package Companies</h3>
+                                    <div style={{ overflowX: "auto" }}>
+                                        <table className="tbl">
+                                            <thead><tr><th>Company</th><th>Package</th><th>Year</th><th>College</th><th>Category</th></tr></thead>
+                                            <tbody>
+                                                {topCompaniesData.map((r, i) => <tr key={i}><td style={{ fontWeight: 600 }}>{r.c}</td><td style={{ fontWeight: 700, color: R, fontFamily: "'Space Mono',monospace" }}>{r.p}</td><td>{r.y}</td><td>{r.cl}</td><td style={{ fontSize: 12, color: "#888" }}>{r.ct}</td></tr>)}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>)}
                             {pg === "students" && (<div>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
                                     <div>
