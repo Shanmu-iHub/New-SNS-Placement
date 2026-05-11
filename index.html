@@ -42,6 +42,7 @@
         // ═══════════════════════════════════════════════════
         const SHEET_CONFIG = {
             spreadsheetId: '1VqI_1aDSA6GTPKQAgUB8pMUph-_eDzODxDyfKQ0Glms',
+            jobsSpreadsheetId: '1Om1qkuUqAzD8-4VV7GCbHLeKeFOxJQk7sVCsX7J9mHU',
             apiKey: 'AIzaSyAzy9p53hv-3qZ_UHhaD1hMbJeCiY48S2Y',
             cacheTime: 0, // 0 minutes cache
             sheets: {
@@ -58,14 +59,16 @@
                 placedStudents: 'Placed_Students',
                 highlights: 'Placement_Highlights',
                 topCompanies: 'Top Package Companies',
+                internships: 'Internship',
+                jobs: 'Jobs'
             }
         };
 
         const sheetsEnabled = () => !!SHEET_CONFIG.spreadsheetId && !!SHEET_CONFIG.apiKey;
 
         // Fetch data via Google Sheets API v4
-        const fetchSheetData = async (sheetName) => {
-            const cacheKey = `sns_sheet_api_${sheetName}`;
+        const fetchSheetData = async (sheetName, spreadsheetId = SHEET_CONFIG.spreadsheetId) => {
+            const cacheKey = `sns_sheet_api_${spreadsheetId}_${sheetName}`;
             try {
                 const cached = localStorage.getItem(cacheKey);
                 if (cached) {
@@ -74,21 +77,24 @@
                 }
             } catch (e) { }
 
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_CONFIG.spreadsheetId}/values/${encodeURIComponent(sheetName)}?key=${SHEET_CONFIG.apiKey}`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}?key=${SHEET_CONFIG.apiKey}`;
 
             const res = await fetch(url);
             if (!res.ok) throw new Error(`Google API Error: ${res.status}`);
 
             const json = await res.json();
+            if (json.error) {
+                console.error(`Google API Error for ${sheetName}:`, json.error);
+                throw new Error(json.error.message);
+            }
+            
             const rows = json.values;
-
             if (!rows || rows.length < 2) return { data: [], fromCache: false };
 
-            // Convert rows -> objects using header row
-            const headers = rows[0];
+            const headers = rows[0].map(h => (h || "").trim());
             const data = rows.slice(1).map(row => {
                 const obj = {};
-                headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
+                headers.forEach((h, i) => { if (h) obj[h] = row[i] !== undefined ? row[i] : ''; });
                 return obj;
             });
 
@@ -234,6 +240,39 @@
             n: r.student_count, co: r.company, r: r.package_info,
             c: r.college, icon: r.icon, dept: r.department
         }));
+
+        const parseJobsInternships = (data) => {
+            if (!data || data.length === 0) return [];
+            
+            const originalHeaders = Object.keys(data[0]);
+            const getHeader = (keys) => originalHeaders.find(h => keys.some(k => h.toLowerCase().includes(k)));
+
+            const colH = getHeader(['company', 'org']);
+            const roleH = getHeader(['role', 'position', 'title', 'job']);
+            const locH = getHeader(['location', 'city', 'place']);
+            const skillH = getHeader(['skill', 'requirement', 'detail', 'description']);
+            const imgH = getHeader(['image', 'logo', 'photo']);
+            const linkH = getHeader(['link', 'apply', 'url']);
+
+            return data.map((r, i) => {
+                let img = r[imgH] || "tarento_logo.png";
+                if (typeof img === 'string' && img.includes('drive.google.com')) {
+                    const driveMatch = img.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+                    if (driveMatch && driveMatch[1]) {
+                        img = `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w400-h400`;
+                    }
+                }
+                return {
+                    id: i + 1,
+                    co: r[colH] || "Tarento Technologies",
+                    ro: r[roleH] || "UI UX Design Intern",
+                    loc: r[locH] || "Bangalore",
+                    img: img,
+                    skills: r[skillH] || "No details provided.",
+                    link: r[linkH] || "#"
+                };
+            });
+        };
 
         // ═══════ DEFAULT (FALLBACK) DATA — used when Sheets is not configured or offline ═══════
 
@@ -390,6 +429,8 @@
             const [sPage, setSPage] = useState(1);
             const [vPage, setVPage] = useState(1);
             const [salaryYr, setSalaryYr] = useState("2025-26");
+            const [selectedInternship, setSelectedInternship] = useState(null);
+            const [selectedJob, setSelectedJob] = useState(null);
 
             const getBestYear = useCallback((id) => {
                 // Return 2025-26 as the default best year for all colleges for the current cycle
@@ -407,6 +448,8 @@
             const [trainingData, setTrainingData] = useState(TR);
             const [platformData, setPlatformData] = useState(PL);
             const [facilityData, setFacilityData] = useState(FAC);
+            const [internshipData, setInternshipData] = useState([]);
+            const [jobData, setJobData] = useState([]);
             const [placedData, setPlacedData] = useState([{ n: "Vipin", co: "Dhvani R&D", r: "R&D Engineer", c: "SNSCT" }, { n: "46 Students", co: "Accenture", r: "₹4-7 LPA", c: "All SNS" }, { n: "37 Students", co: "Cognizant", r: "₹4-6 LPA", c: "All SNS" }, { n: "8 Students", co: "Intellipaat", r: "₹9 LPA", c: "SNSCT+SNSCE" }, { n: "56 Students", co: "C.R.I. Pumps", r: "Core Eng", c: "SNSCE" }, { n: "21 Students", co: "L.G.Balakrishnan", r: "Core Eng", c: "SNSCE" }, { n: "15 MBA Students", co: "Rupeek", r: "₹4 LPA", c: "All SNS" }, { n: "120 Students", co: "TCS", r: "₹3.6-7 LPA", c: "All SNS" }]);
             const [highlightData, setHighlightData] = useState(null);
             const [topCompaniesData, setTopCompaniesData] = useState([
@@ -444,9 +487,21 @@
                         fetchSheetData(SHEET_CONFIG.sheets.placedStudents),
                         fetchSheetData(SHEET_CONFIG.sheets.highlights),
                         fetchSheetData(SHEET_CONFIG.sheets.topCompanies),
+                        fetchSheetData(SHEET_CONFIG.sheets.internships, SHEET_CONFIG.jobsSpreadsheetId),
+                        fetchSheetData(SHEET_CONFIG.sheets.jobs, SHEET_CONFIG.jobsSpreadsheetId),
                     ]);
 
-                    const get = (i) => results[i].status === 'fulfilled' && results[i].value.data.length > 0 ? results[i].value.data : null;
+
+                    const get = (i) => {
+                        if (results[i].status === 'rejected') {
+                            const errMsg = results[i].reason?.message || 'Fetch failed';
+                            console.warn(`Sheet ${i} failed:`, errMsg);
+                            setSyncStatus(prev => ({ ...prev, error: `Sheet ${i}: ${errMsg}` }));
+                            return null;
+                        }
+                        const val = results[i].value;
+                        return val && val.data && val.data.length > 0 ? val.data : null;
+                    };
 
                     if (get(0)) setColleges(parseColleges(get(0)));
                     if (get(1)) setDeptMap(parseDepartments(get(1)));
@@ -461,6 +516,8 @@
                     if (get(10)) setPlacedData(parsePlacedStudents(get(10)));
                     if (get(11)) setHighlightData(parseHighlights(get(11)));
                     if (get(12)) setTopCompaniesData(parseTopCompanies(get(12)));
+                    if (get(13)) setInternshipData(parseJobsInternships(get(13)));
+                    if (get(14)) setJobData(parseJobsInternships(get(14)));
 
                     const anyFromCache = results.some(r => r.status === 'fulfilled' && r.value.fromCache);
                     setSyncStatus({ loading: false, lastSync: new Date(), error: null, source: anyFromCache ? 'cache' : 'live' });
@@ -469,6 +526,43 @@
                     setSyncStatus(prev => ({ ...prev, loading: false, error: err.message, source: 'defaults' }));
                 }
             }, []);
+
+            // Handle Deep Linking on Load
+            useEffect(() => {
+                const params = new URLSearchParams(window.location.search);
+                const type = params.get('type');
+                const id = params.get('id');
+                
+                if (type && id) {
+                    if (type === 'internship') {
+                        const item = internshipData.find(i => String(i.id) === id);
+                        if (item) {
+                            setPg('internships');
+                            setSelectedInternship(item);
+                        }
+                    } else if (type === 'job') {
+                        const item = jobData.find(j => String(j.id) === id);
+                        if (item) {
+                            setPg('jobs');
+                            setSelectedJob(item);
+                        }
+                    }
+                }
+            }, [internshipData, jobData]);
+
+            // Share Logic
+            const handleShare = (e, item, type) => {
+                e.stopPropagation();
+                const url = new URL(window.location.href);
+                url.searchParams.set('type', type);
+                url.searchParams.set('id', item.id);
+                
+                navigator.clipboard.writeText(url.toString()).then(() => {
+                    alert('Share link copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+            };
 
             // Initial load from Sheets + auto-refresh interval
             useEffect(() => {
@@ -600,7 +694,7 @@
                 return keys.length > 0 ? salaryBandsByYear[keys[0]] : [];
             })();
 
-            const navItems = [{ id: "home", icon: "🏠", l: "Home" }, { id: "dashboard", icon: "📊", l: "Dashboard" }, { id: "colleges", icon: "🏫", l: "Colleges & Depts" }, { id: "drives", icon: "🏢", l: "Company Drives" }, { id: "salary", icon: "💰", l: "Salary Analysis" }, { id: "students", icon: "🎓", l: "Placed Students" }, { id: "training", icon: "📚", l: "Training" }, { id: "upcoming", icon: "📅", l: "Upcoming" }, { id: "facilities", icon: "🏗️", l: "Facilities" }];
+            const navItems = [{ id: "home", icon: "🏠", l: "Home" }, { id: "dashboard", icon: "📊", l: "Dashboard" }, { id: "colleges", icon: "🏫", l: "Colleges & Depts" }, { id: "drives", icon: "🏢", l: "Company Drives" }, { id: "salary", icon: "💰", l: "Salary Analysis" }, { id: "students", icon: "🎓", l: "Placed Students" }, { id: "internships", icon: "💼", l: "Internships" }, { id: "jobs", icon: "🚀", l: "Jobs" }, { id: "training", icon: "📚", l: "Training" }, { id: "upcoming", icon: "📅", l: "Upcoming" }, { id: "facilities", icon: "🏗️", l: "Facilities" }];
             const Badge = ({ children, bg, fg }) => <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 100, fontSize: 10, fontWeight: 600, background: bg, color: fg }}>{children}</span>;
             const StatBox = ({ v, l, c: clr = R }) => <div className="sbox"><div style={{ fontSize: 26, fontWeight: 800, color: clr, fontFamily: "'Space Mono',monospace", letterSpacing: "-0.5px" }}>{v}</div><div style={{ fontSize: 9, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 2 }}>{l}</div></div>;
 
@@ -1117,7 +1211,112 @@
 
                             {pg === "facilities" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Campus Placement Facilities</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>{facilityData.map((f, i) => <div key={i} className="card" style={{ padding: 18, display: "flex", gap: 12, alignItems: "flex-start" }}><div style={{ fontSize: 26, flexShrink: 0 }}>{f.i}</div><div><div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{f.t}</div><div style={{ fontSize: 12, color: "#888" }}>{f.d}</div></div></div>)}</div><div className="card" style={{ padding: 24, marginTop: 20, borderLeft: `4px solid ${R}` }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>IIPC Mission</h3><p style={{ fontSize: 13, color: "#666", lineHeight: 1.7 }}>The Industry Institute Partnership Cell synergizes academic activities with industry needs through strategic planning. SNSCT IIPC functions with excellent rapport with industries in and around Coimbatore — offering technical consultancy, latest engineering courses, sponsored R&D, seminars, workshops, and industrial training programmes.</p></div></div>)}
 
+                            {pg === "internships" && (
+                                <div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+                                        <h2 style={{ fontSize: 22, fontWeight: 800 }}>Student Internships</h2>
+                                        <div style={{ fontSize: 13, color: syncStatus.error ? "#f44336" : "#999" }}>
+                                            {syncStatus.error ? `Sync Error: ${syncStatus.error}` : `Showing ${internshipData.length} premium opportunities`}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 20 }}>
+                                        {internshipData.map(item => (
+                                            <div key={item.id} className="card hlift" style={{ padding: 20, cursor: "pointer", display: "flex", flexDirection: "column", gap: 12 }} onClick={() => setSelectedInternship(item)}>
+                                                <div style={{ width: 60, height: 60, borderRadius: 12, background: "#f9f9f9", display: "flex", alignItems: "center", justifyContent: "center", padding: 8, border: "1px solid #eee" }}>
+                                                    <img src={item.img} alt={item.co} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: 15, fontWeight: 800, color: D, marginBottom: 2 }}>{item.ro}</div>
+                                                    <div style={{ fontSize: 13, color: R, fontWeight: 600 }}>{item.co}</div>
+                                                </div>
+                                                <div style={{ fontSize: 12, color: "#888", display: "flex", alignItems: "center", gap: 5 }}>
+                                                    <i className="fas fa-map-marker-alt"></i> {item.loc}
+                                                </div>
+                                                <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #f0f0f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                    <Badge bg={`${R}10`} fg={R}>Remote Available</Badge>
+                                                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                                        <button onClick={(e) => handleShare(e, item, 'internship')} style={{ background: "#f0f0f0", border: "none", width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666" }} title="Share Internship">
+                                                            <i className="fas fa-share-alt" style={{ fontSize: 12 }}></i>
+                                                        </button>
+                                                        <span style={{ fontSize: 12, fontWeight: 600, color: "#555" }}>Details →</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {pg === "jobs" && (
+                                <div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+                                        <h2 style={{ fontSize: 22, fontWeight: 800 }}>Job Opportunities</h2>
+                                        <div style={{ fontSize: 13, color: "#999" }}>Showing {jobData.length} premium roles</div>
+                                    </div>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 20 }}>
+                                        {jobData.map(item => (
+                                            <div key={item.id} className="card hlift" style={{ padding: 20, cursor: "pointer", display: "flex", flexDirection: "column", gap: 12 }} onClick={() => setSelectedJob(item)}>
+                                                <div style={{ width: 60, height: 60, borderRadius: 12, background: "#f9f9f9", display: "flex", alignItems: "center", justifyContent: "center", padding: 8, border: "1px solid #eee" }}>
+                                                    <img src={item.img} alt={item.co} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: 15, fontWeight: 800, color: D, marginBottom: 2 }}>{item.ro}</div>
+                                                    <div style={{ fontSize: 13, color: R, fontWeight: 600 }}>{item.co}</div>
+                                                </div>
+                                                <div style={{ fontSize: 12, color: "#888", display: "flex", alignItems: "center", gap: 5 }}>
+                                                    <i className="fas fa-map-marker-alt"></i> {item.loc}
+                                                </div>
+                                                <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #f0f0f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                    <Badge bg="#E8F5E9" fg="#2E7D32">Full Time</Badge>
+                                                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                                        <button onClick={(e) => handleShare(e, item, 'job')} style={{ background: "#f0f0f0", border: "none", width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666" }} title="Share Job">
+                                                            <i className="fas fa-share-alt" style={{ fontSize: 12 }}></i>
+                                                        </button>
+                                                        <span style={{ fontSize: 12, fontWeight: 600, color: "#555" }}>Details →</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                         </main>
+                        {(selectedInternship || selectedJob) && (() => {
+                            const item = selectedInternship || selectedJob;
+                            const isJob = !!selectedJob;
+                            const onClose = () => { setSelectedInternship(null); setSelectedJob(null); };
+                            return (
+                                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20 }} onClick={onClose}>
+                                    <div style={{ background: "white", borderRadius: 20, maxWidth: 600, width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative", padding: 32, boxShadow: "0 20px 50px rgba(0,0,0,0.2)", animation: "bounce-in 0.4s ease-out" }} onClick={e => e.stopPropagation()}>
+                                        <button onClick={onClose} style={{ position: "absolute", top: 20, right: 20, background: "#f5f5f5", border: "none", width: 36, height: 36, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#666" }}>×</button>
+                                        <div style={{ display: "flex", gap: 24, marginBottom: 24, alignItems: "flex-start" }}>
+                                            <div style={{ width: 80, height: 80, borderRadius: 12, background: "#f9f9f9", display: "flex", alignItems: "center", justifyContent: "center", padding: 10, border: "1px solid #eee", flexShrink: 0 }}>
+                                                <img src={item.img} alt={item.co} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                                            </div>
+                                            <div>
+                                                <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 4, lineHeight: 1.2 }}>{item.ro}</h2>
+                                                <div style={{ fontSize: 18, color: R, fontWeight: 700, marginBottom: 8 }}>{item.co}</div>
+                                                <div style={{ fontSize: 14, color: "#888", display: "flex", alignItems: "center", gap: 6 }}>
+                                                    <i className="fas fa-map-marker-alt"></i> {item.loc}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ marginBottom: 32 }}>
+                                            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#333", borderLeft: `3px solid ${R}`, paddingLeft: 12 }}>Position Details</h3>
+                                            <p style={{ fontSize: 14, color: "#555", lineHeight: 1.8 }}>{item.skills}</p>
+                                        </div>
+
+                                        <button 
+                                            style={{ background: R, color: "white", border: "none", padding: "18px 32px", borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: "pointer", width: "100%", transition: "all 0.2s", boxShadow: `0 8px 20px ${R}40` }} 
+                                            onMouseOver={e => e.target.style.transform = 'translateY(-2px)'} 
+                                            onMouseOut={e => e.target.style.transform = 'translateY(0)'}
+                                            onClick={() => item.link && item.link !== "#" ? window.open(item.link, '_blank') : alert('Application link not available')}
+                                        >Apply Now</button>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </div>)}
                 </div>
             );
