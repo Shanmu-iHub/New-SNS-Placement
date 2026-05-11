@@ -246,14 +246,21 @@
             if (!data || data.length === 0) return [];
             
             const originalHeaders = Object.keys(data[0]);
-            const getHeader = (keys) => originalHeaders.find(h => keys.some(k => h.toLowerCase().includes(k)));
+            const getHeader = (keys) => originalHeaders.find(h => keys.some(k => (h || "").toLowerCase().includes(k)));
 
             const colH = getHeader(['company', 'org']);
             const roleH = getHeader(['role', 'position', 'title', 'job']);
             const locH = getHeader(['location', 'city', 'place']);
             const skillH = getHeader(['skill', 'requirement', 'detail', 'description']);
             const imgH = getHeader(['image', 'logo', 'photo']);
-            const linkH = getHeader(['link', 'apply', 'url']);
+            
+            // Correctly distinguish between Apply Link and Image Link
+            // We prioritize 'apply' or links that don't mention 'image' for the application link
+            const linkH = originalHeaders.find(h => {
+                const l = (h || "").toLowerCase();
+                return l.includes('apply') || (l.includes('link') && !l.includes('image') && !l.includes('logo'));
+            }) || getHeader(['link', 'apply', 'url']);
+            
             const modeH = getHeader(['mode', 'type', 'nature']);
 
             return data.map((r, i) => {
@@ -270,6 +277,7 @@
                     ro: r[roleH] || "UI UX Design Intern",
                     loc: r[locH] || "Bangalore",
                     img: img,
+                    imgLink: r[imgH] || "", // Keep the original image link
                     skills: r[skillH] || "No details provided.",
                     link: r[linkH] || "#",
                     mode: r[modeH] || "Full Time"
@@ -1346,10 +1354,17 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div style={{ marginBottom: 32 }}>
+                                        <div style={{ marginBottom: 24 }}>
                                             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#333", borderLeft: `3px solid ${R}`, paddingLeft: 12 }}>Position Details</h3>
                                             <p style={{ fontSize: 14, color: "#555", lineHeight: 1.8 }}>{item.skills}</p>
                                         </div>
+
+                                        {item.imgLink && (
+                                            <div style={{ marginBottom: 32 }}>
+                                                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#333", borderLeft: `3px solid ${R}`, paddingLeft: 12 }}>Image Link</h3>
+                                                <a href={item.imgLink} target="_blank" style={{ fontSize: 13, color: R, textDecoration: "none", wordBreak: "break-all" }}>{item.imgLink}</a>
+                                            </div>
+                                        )}
 
                                         <button 
                                             style={{ background: R, color: "white", border: "none", padding: "18px 32px", borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: "pointer", width: "100%", transition: "all 0.2s", boxShadow: `0 8px 20px ${R}40` }} 
