@@ -282,7 +282,7 @@
                     link: r[linkH] || "#",
                     mode: r[modeH] || "Full Time"
                 };
-            });
+            }).reverse();
         };
 
         // ═══════ DEFAULT (FALLBACK) DATA — used when Sheets is not configured or offline ═══════
@@ -430,7 +430,35 @@
         const FAC = [{ i: "🖥️", t: "600 Computers", d: "Dedicated lab for online tests" }, { i: "🏛️", t: "800-Seat Auditorium", d: "Pre-Placement Talks" }, { i: "📝", t: "1000-Seat Written Test", d: "Single-sitting exam capacity" }, { i: "⚡", t: "4000 Tests/Day", d: "Peak daily capacity" }, { i: "🌐", t: "1 Gbps Internet", d: "Airtel 500M + Jio 500M" }, { i: "🎤", t: "PPT Infra", d: "LCD, PCs, technicians" }, { i: "🚪", t: "Dedicated Rooms", d: "Separate for test, GD, interview" }, { i: "🤖", t: "Bot Lab (RPA)", d: "Automation Anywhere CoE" }, { i: "🔬", t: "iTech Labs", d: "R&D innovation space" }, { i: "💡", t: "IBI Liquid Studio", d: "Hackathon prototype showcase" }, { i: "🔧", t: "Piston Factory", d: "Project & fabrication lounge" }];
 
         const App = () => {
-            const [pg, setPg] = useState("home");
+            const getInitialPage = () => {
+                const path = window.location.pathname.replace(/\/$/, '').split('/').pop();
+                if (path === 'internship' || path === 'internships') return 'internships';
+                if (path === 'jobs' || path === 'job') return 'jobs';
+                if (path === 'dashboard') return 'dashboard';
+                if (path === 'colleges') return 'colleges';
+                if (path === 'drives') return 'drives';
+                if (path === 'salary') return 'salary';
+                if (path === 'students') return 'students';
+                if (path === 'training') return 'training';
+                if (path === 'upcoming') return 'upcoming';
+                if (path === 'facilities') return 'facilities';
+                return 'home';
+            };
+            const [pg, _setPg] = useState(getInitialPage);
+
+            const setPg = (newPg) => {
+                _setPg(newPg);
+                let path = newPg === 'home' ? '/' : `/${newPg}`;
+                if (newPg === 'internships') path = '/internship';
+                window.history.pushState(null, '', path);
+            };
+
+            useEffect(() => {
+                const handlePopState = () => _setPg(getInitialPage());
+                window.addEventListener('popstate', handlePopState);
+                return () => window.removeEventListener('popstate', handlePopState);
+            }, []);
+
             const [col, setCol] = useState("all");
             const [yr, setYr] = useState("2025-26");
             const [dept, setDept] = useState("All");
