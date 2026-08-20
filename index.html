@@ -307,21 +307,30 @@
             snscp: ["All", "B.Pharm", "D.Pharm"],
         };
 
-        const YEARS = ["2025-26", "2024-25", "2023-24", "2022-23", "2021-22", "2020-21"];
+        const YEARS = ["2026-27", "2025-26", "2024-25", "2023-24", "2022-23", "2021-22", "2020-21"];
 
         const YS = {
-            snsct: { "2025-26": { h: "53 LPA", a: "4.8 LPA", m: "4 LPA", p: 984, e: 1025, r: 150, o: 1100 }, "2024-25": { h: "21 LPA", a: "4.5 LPA", m: "3.6 LPA", p: 1645, e: 1713, r: 454, o: 2100 }, "2023-24": { h: "19 LPA", a: "4.2 LPA", m: "3.5 LPA", p: 1008, e: 1080, r: 244, o: 1300 }, "2022-23": { h: "13.5 LPA", a: "4 LPA", m: "3.2 LPA", p: 900, e: 1000, r: 200, o: 1100 }, "2021-22": { h: "12 LPA", a: "3.8 LPA", m: "3 LPA", p: 820, e: 950, r: 180, o: 950 }, "2020-21": { h: "10 LPA", a: "3.5 LPA", m: "2.8 LPA", p: 750, e: 900, r: 160, o: 850 } },
-            snsce: { "2025-26": { h: "24 LPA", a: "4.34 LPA", m: "4 LPA", p: 612, e: 656, r: 240, o: 646 }, "2024-25": { h: "21 LPA", a: "5 LPA", m: "7.8 LPA", p: 800, e: 900, r: 165, o: 1000 }, "2023-24": { h: "13.5 LPA", a: "4.5 LPA", m: "4 LPA", p: 650, e: 750, r: 140, o: 800 }, "2022-23": { h: "10 LPA", a: "4 LPA", m: "3.5 LPA", p: 550, e: 650, r: 120, o: 680 }, "2021-22": { h: "8 LPA", a: "3.6 LPA", m: "3 LPA", p: 480, e: 580, r: 100, o: 560 }, "2020-21": { h: "9 LPA", a: "3.4 LPA", m: "4 LPA", p: 400, e: 520, r: 85, o: 470 } },
-            drsnsrcas: { "2025-26": { h: "9 LPA", a: "2.92 LPA", m: "2.28 LPA", p: 1352, e: 1717, r: 116, o: 1769 }, "2024-25": { h: "9 LPA", a: "2.51 LPA", m: "2.34 LPA", p: 1334, e: 1584, r: 101, o: 1734 }, "2023-24": { h: "6.1 LPA", a: "2.63 LPA", m: "2.50 LPA", p: 1173, e: 1569, r: 81, o: 1220 }, "2022-23": { h: "7.25 LPA", a: "2.10 LPA", m: "1.88 LPA", p: 952, e: 1316, r: 53, o: 1103 }, "2021-22": { h: "3.50 LPA", a: "2 LPA", m: "1.86 LPA", p: 549, e: 863, r: 51, o: 706 }, "2020-21": { h: "5.8 LPA", a: "1.72 LPA", m: "1.8 LPA", p: 669, e: 961, r: 74, o: 919 } },
-            snscnursing: { "2025-26": { h: "2.64 LPA", a: "2.38 LPA", m: "2.38 LPA", p: 36, e: 56, r: 4, o: 36 }, "2024-25": { h: "2.52 LPA", a: "2.28 LPA", m: "2.28 LPA", p: 30, e: 32, r: 4, o: 30 } },
-            snscahs: { "2025-26": { h: "5 LPA", a: "5 LPA", m: "7.8 LPA", p: 40, e: 45, r: 20, o: 100 }, "2024-25": { h: "3.6 LPA", a: "1.8 LPA", m: "2.16 LPA", p: 52, e: 68, r: 22, o: 0 }, "2023-24": { h: "2.4 LPA", a: "1.5 LPA", m: "1.8 LPA", p: 26, e: 31, r: 13, o: 0 } },
-            snscphs: { "2024-25": { h: "3.5 LPA", a: "2.5 LPA", m: "2.4 LPA", p: 27, e: 27, r: 7, o: 35 } },
-            snscp: { "2025-26": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129 }, "2024-25": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129 }, "2023-24": { h: "7.5 LPA", a: "4.05 LPA", m: "3.375 LPA", p: 53, e: 53, r: 21, o: 84 }, "2022-23": { h: "6.5 LPA", a: "4.01 LPA", m: "3.75 LPA", p: 65, e: 68, r: 21, o: 90 } },
+            snsct: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 1025, r: 0, o: 0 }, "2025-26": { h: "53 LPA", a: "4.8 LPA", m: "4 LPA", p: 984, e: 1025, r: 150, o: 1100 }, "2024-25": { h: "21 LPA", a: "4.5 LPA", m: "3.6 LPA", p: 1645, e: 1713, r: 454, o: 2100 }, "2023-24": { h: "19 LPA", a: "4.2 LPA", m: "3.5 LPA", p: 1008, e: 1080, r: 244, o: 1300 }, "2022-23": { h: "13.5 LPA", a: "4 LPA", m: "3.2 LPA", p: 900, e: 1000, r: 200, o: 1100 }, "2021-22": { h: "12 LPA", a: "3.8 LPA", m: "3 LPA", p: 820, e: 950, r: 180, o: 950 }, "2020-21": { h: "10 LPA", a: "3.5 LPA", m: "2.8 LPA", p: 750, e: 900, r: 160, o: 850 } },
+            snsce: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 656, r: 0, o: 0 }, "2025-26": { h: "24 LPA", a: "4.34 LPA", m: "4 LPA", p: 612, e: 656, r: 240, o: 646 }, "2024-25": { h: "21 LPA", a: "5 LPA", m: "7.8 LPA", p: 800, e: 900, r: 165, o: 1000 }, "2023-24": { h: "13.5 LPA", a: "4.5 LPA", m: "4 LPA", p: 650, e: 750, r: 140, o: 800 }, "2022-23": { h: "10 LPA", a: "4 LPA", m: "3.5 LPA", p: 550, e: 650, r: 120, o: 680 }, "2021-22": { h: "8 LPA", a: "3.6 LPA", m: "3 LPA", p: 480, e: 580, r: 100, o: 560 }, "2020-21": { h: "9 LPA", a: "3.4 LPA", m: "4 LPA", p: 400, e: 520, r: 85, o: 470 } },
+            drsnsrcas: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 1717, r: 0, o: 0 }, "2025-26": { h: "9 LPA", a: "2.92 LPA", m: "2.28 LPA", p: 1352, e: 1717, r: 116, o: 1769 }, "2024-25": { h: "9 LPA", a: "2.51 LPA", m: "2.34 LPA", p: 1334, e: 1584, r: 101, o: 1734 }, "2023-24": { h: "6.1 LPA", a: "2.63 LPA", m: "2.50 LPA", p: 1173, e: 1569, r: 81, o: 1220 }, "2022-23": { h: "7.25 LPA", a: "2.10 LPA", m: "1.88 LPA", p: 952, e: 1316, r: 53, o: 1103 }, "2021-22": { h: "3.50 LPA", a: "2 LPA", m: "1.86 LPA", p: 549, e: 863, r: 51, o: 706 }, "2020-21": { h: "5.8 LPA", a: "1.72 LPA", m: "1.8 LPA", p: 669, e: 961, r: 74, o: 919 } },
+            snscnursing: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 56, r: 0, o: 0 }, "2025-26": { h: "2.64 LPA", a: "2.38 LPA", m: "2.38 LPA", p: 36, e: 56, r: 4, o: 36 }, "2024-25": { h: "2.52 LPA", a: "2.28 LPA", m: "2.28 LPA", p: 30, e: 32, r: 4, o: 30 } },
+            snscahs: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 45, r: 0, o: 0 }, "2025-26": { h: "5 LPA", a: "5 LPA", m: "7.8 LPA", p: 40, e: 45, r: 20, o: 100 }, "2024-25": { h: "3.6 LPA", a: "1.8 LPA", m: "2.16 LPA", p: 52, e: 68, r: 22, o: 0 }, "2023-24": { h: "2.4 LPA", a: "1.5 LPA", m: "1.8 LPA", p: 26, e: 31, r: 13, o: 0 } },
+            snscphs: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 27, r: 0, o: 0 }, "2024-25": { h: "3.5 LPA", a: "2.5 LPA", m: "2.4 LPA", p: 27, e: 27, r: 7, o: 35 } },
+            snscp: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 73, r: 0, o: 0 }, "2025-26": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129 }, "2024-25": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129 }, "2023-24": { h: "7.5 LPA", a: "4.05 LPA", m: "3.375 LPA", p: 53, e: 53, r: 21, o: 84 }, "2022-23": { h: "6.5 LPA", a: "4.01 LPA", m: "3.75 LPA", p: 65, e: 68, r: 21, o: 90 } },
         };
 
 
 
         const SB = {
+            "2026-27": [
+                { range: "₹20L+", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#C41230" },
+                { range: "₹15-20L", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#E63946" },
+                { range: "₹10-15L", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#F4845F" },
+                { range: "₹7-10L", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#F7B267" },
+                { range: "₹5-7L", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#7FB069" },
+                { range: "₹3-5L", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#4ECDC4" },
+                { range: "₹2-3L", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#45B7D1" },
+            ],
             "2025-26": [
                 { range: "₹20L+", snsct: 3, snsce: 0, drsnsrcas: 0, c: "#C41230" },
                 { range: "₹15-20L", snsct: 5, snsce: 0, drsnsrcas: 0, c: "#E63946" },
@@ -636,7 +645,7 @@
                         return Object.keys(yearlyStats).some(k => {
                             if (k.toLowerCase() === 'all' || k.toLowerCase() === 'overall') return false;
                             const s = yearlyStats[k]?.[y];
-                            return s && (s.p > 0 || s.h !== "-" || s.r > 0 || s.o > 0);
+                            return s && (s.p > 0 || (s.h && s.h !== "-") || s.r > 0 || s.o > 0 || y === "2026-27");
                         });
                     });
                     return ys.length > 0 ? ys : [YEARS[0]];
@@ -644,7 +653,7 @@
                 const colData = yearlyStats[col] || {};
                 const ys = YEARS.filter(y => {
                     const s = colData[y];
-                    return s && (s.p > 0 || s.h !== "-" || s.r > 0 || s.o > 0);
+                    return s && (s.p > 0 || (s.h && s.h !== "-") || s.r > 0 || s.o > 0 || y === "2026-27");
                 });
                 return ys.length > 0 ? ys : [YEARS[0]];
             })();
@@ -1096,7 +1105,7 @@
                             {pg === "colleges" && (
                                 <div>
                                     <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Colleges & Departments</h2>
-                                    {colleges.filter(c => !(yr === "2025-26" && c.id === "snsce")).map(c => {
+                                    {colleges.filter(c => !((yr === "2025-26" || yr === "2026-27") && c.id === "snsce")).map(c => {
                                         const s = yearlyStats[c.id]?.[yr] || { h: "-", p: 0, e: 1 };
                                         return (
                                             <div key={c.id} className="card" style={{ padding: 24, marginBottom: 16, borderLeft: `4px solid ${c.color}`, cursor: "pointer" }} onClick={() => { setCol(c.id); setPg("dashboard") }}>
@@ -1184,17 +1193,17 @@
                                     <div style={{ overflowX: "auto" }}>
                                         <table className="tbl">
                                             <thead>
-                                                <tr><th>Band</th><th>SNSCT</th>{yr !== "2025-26" && <th>SNSCE</th>}<th>Dr.SNSRCAS</th><th>Nursing</th><th>AHS</th><th>Pharmacy</th><th>Physio</th><th>Total</th></tr>
+                                                <tr><th>Band</th><th>SNSCT</th>{yr !== "2025-26" && yr !== "2026-27" && <th>SNSCE</th>}<th>Dr.SNSRCAS</th><th>Nursing</th><th>AHS</th><th>Pharmacy</th><th>Physio</th><th>Total</th></tr>
                                             </thead>
                                             <tbody>
                                                 {salaryBands.map((b, i) => {
-                                                    const snsctVal = yr === "2025-26" ? (b.snsct || 0) + (b.snsce || 0) : (b.snsct || 0);
+                                                    const snsctVal = (yr === "2025-26" || yr === "2026-27") ? (b.snsct || 0) + (b.snsce || 0) : (b.snsct || 0);
                                                     const total = (b.snsct || 0) + (b.snsce || 0) + (b.drsnsrcas || 0) + (b.snscnursing || 0) + (b.snscahs || 0) + (b.snscphs || 0) + (b.snscp || 0);
                                                     return (
                                                         <tr key={i}>
                                                             <td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td>
                                                             <td>{snsctVal}</td>
-                                                            {yr !== "2025-26" && <td>{b.snsce}</td>}
+                                                            {yr !== "2025-26" && yr !== "2026-27" && <td>{b.snsce}</td>}
                                                             <td>{b.drsnsrcas}</td>
                                                             <td>{b.snscnursing}</td>
                                                             <td>{b.snscahs}</td>
