@@ -126,10 +126,27 @@
             rows.forEach(r => {
                 const cid = COLLEGE_ID_MAP[r.college_id] || r.college_id;
                 if (!obj[cid]) obj[cid] = {};
+
+                // Determine data status from backend/sheet row
+                let dStatus = 'final';
+                const rawStatus = (r.data_status || r.status || '').toString().toLowerCase().trim();
+                const isFinalVal = r.is_final !== undefined && r.is_final !== '' ? String(r.is_final).toLowerCase().trim() : null;
+
+                if (rawStatus === 'updating' || rawStatus === 'ongoing' || rawStatus === 'in progress' || rawStatus === 'active' || rawStatus === 'incomplete') {
+                    dStatus = 'updating';
+                } else if (rawStatus === 'final' || rawStatus === 'completed' || rawStatus === 'finalized') {
+                    dStatus = 'final';
+                } else if (isFinalVal !== null) {
+                    dStatus = (isFinalVal === 'true' || isFinalVal === '1' || isFinalVal === 'yes') ? 'final' : 'updating';
+                } else if (r.academic_year === '2026-27') {
+                    dStatus = 'updating';
+                }
+
                 obj[cid][r.academic_year] = {
                     h: r.highest_package, a: r.average_package, m: r.median_package,
                     p: parseInt(r.students_placed) || 0, e: parseInt(r.students_eligible) || 0,
                     r: parseInt(r.recruiters_count) || 0, o: parseInt(r.total_offers) || 0,
+                    status: dStatus
                 };
             });
             return obj;
@@ -427,13 +444,13 @@
         const YEARS = ["2026-27", "2025-26", "2024-25", "2023-24", "2022-23", "2021-22", "2020-21"];
 
         const YS = {
-            snsct: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 1025, r: 0, o: 0 }, "2025-26": { h: "53 LPA", a: "4.8 LPA", m: "4 LPA", p: 984, e: 1025, r: 150, o: 1100 }, "2024-25": { h: "21 LPA", a: "4.5 LPA", m: "3.6 LPA", p: 1645, e: 1713, r: 454, o: 2100 }, "2023-24": { h: "19 LPA", a: "4.2 LPA", m: "3.5 LPA", p: 1008, e: 1080, r: 244, o: 1300 }, "2022-23": { h: "13.5 LPA", a: "4 LPA", m: "3.2 LPA", p: 900, e: 1000, r: 200, o: 1100 }, "2021-22": { h: "12 LPA", a: "3.8 LPA", m: "3 LPA", p: 820, e: 950, r: 180, o: 950 }, "2020-21": { h: "10 LPA", a: "3.5 LPA", m: "2.8 LPA", p: 750, e: 900, r: 160, o: 850 } },
-            snsce: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 656, r: 0, o: 0 }, "2025-26": { h: "24 LPA", a: "4.34 LPA", m: "4 LPA", p: 612, e: 656, r: 240, o: 646 }, "2024-25": { h: "21 LPA", a: "5 LPA", m: "7.8 LPA", p: 800, e: 900, r: 165, o: 1000 }, "2023-24": { h: "13.5 LPA", a: "4.5 LPA", m: "4 LPA", p: 650, e: 750, r: 140, o: 800 }, "2022-23": { h: "10 LPA", a: "4 LPA", m: "3.5 LPA", p: 550, e: 650, r: 120, o: 680 }, "2021-22": { h: "8 LPA", a: "3.6 LPA", m: "3 LPA", p: 480, e: 580, r: 100, o: 560 }, "2020-21": { h: "9 LPA", a: "3.4 LPA", m: "4 LPA", p: 400, e: 520, r: 85, o: 470 } },
-            drsnsrcas: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 1717, r: 0, o: 0 }, "2025-26": { h: "9 LPA", a: "2.92 LPA", m: "2.28 LPA", p: 1352, e: 1717, r: 116, o: 1769 }, "2024-25": { h: "9 LPA", a: "2.51 LPA", m: "2.34 LPA", p: 1334, e: 1584, r: 101, o: 1734 }, "2023-24": { h: "6.1 LPA", a: "2.63 LPA", m: "2.50 LPA", p: 1173, e: 1569, r: 81, o: 1220 }, "2022-23": { h: "7.25 LPA", a: "2.10 LPA", m: "1.88 LPA", p: 952, e: 1316, r: 53, o: 1103 }, "2021-22": { h: "3.50 LPA", a: "2 LPA", m: "1.86 LPA", p: 549, e: 863, r: 51, o: 706 }, "2020-21": { h: "5.8 LPA", a: "1.72 LPA", m: "1.8 LPA", p: 669, e: 961, r: 74, o: 919 } },
-            snscnursing: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 56, r: 0, o: 0 }, "2025-26": { h: "2.64 LPA", a: "2.38 LPA", m: "2.38 LPA", p: 36, e: 56, r: 4, o: 36 }, "2024-25": { h: "2.52 LPA", a: "2.28 LPA", m: "2.28 LPA", p: 30, e: 32, r: 4, o: 30 } },
-            snscahs: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 45, r: 0, o: 0 }, "2025-26": { h: "5 LPA", a: "5 LPA", m: "7.8 LPA", p: 40, e: 45, r: 20, o: 100 }, "2024-25": { h: "3.6 LPA", a: "1.8 LPA", m: "2.16 LPA", p: 52, e: 68, r: 22, o: 0 }, "2023-24": { h: "2.4 LPA", a: "1.5 LPA", m: "1.8 LPA", p: 26, e: 31, r: 13, o: 0 } },
-            snscphs: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 27, r: 0, o: 0 }, "2024-25": { h: "3.5 LPA", a: "2.5 LPA", m: "2.4 LPA", p: 27, e: 27, r: 7, o: 35 } },
-            snscp: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 73, r: 0, o: 0 }, "2025-26": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129 }, "2024-25": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129 }, "2023-24": { h: "7.5 LPA", a: "4.05 LPA", m: "3.375 LPA", p: 53, e: 53, r: 21, o: 84 }, "2022-23": { h: "6.5 LPA", a: "4.01 LPA", m: "3.75 LPA", p: 65, e: 68, r: 21, o: 90 } },
+            snsct: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 1025, r: 0, o: 0, status: "updating" }, "2025-26": { h: "53 LPA", a: "4.8 LPA", m: "4 LPA", p: 984, e: 1025, r: 150, o: 1100, status: "final" }, "2024-25": { h: "21 LPA", a: "4.5 LPA", m: "3.6 LPA", p: 1645, e: 1713, r: 454, o: 2100, status: "final" }, "2023-24": { h: "19 LPA", a: "4.2 LPA", m: "3.5 LPA", p: 1008, e: 1080, r: 244, o: 1300, status: "final" }, "2022-23": { h: "13.5 LPA", a: "4 LPA", m: "3.2 LPA", p: 900, e: 1000, r: 200, o: 1100, status: "final" }, "2021-22": { h: "12 LPA", a: "3.8 LPA", m: "3 LPA", p: 820, e: 950, r: 180, o: 950, status: "final" }, "2020-21": { h: "10 LPA", a: "3.5 LPA", m: "2.8 LPA", p: 750, e: 900, r: 160, o: 850, status: "final" } },
+            snsce: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 656, r: 0, o: 0, status: "updating" }, "2025-26": { h: "24 LPA", a: "4.34 LPA", m: "4 LPA", p: 612, e: 656, r: 240, o: 646, status: "final" }, "2024-25": { h: "21 LPA", a: "5 LPA", m: "7.8 LPA", p: 800, e: 900, r: 165, o: 1000, status: "final" }, "2023-24": { h: "13.5 LPA", a: "4.5 LPA", m: "4 LPA", p: 650, e: 750, r: 140, o: 800, status: "final" }, "2022-23": { h: "10 LPA", a: "4 LPA", m: "3.5 LPA", p: 550, e: 650, r: 120, o: 680, status: "final" }, "2021-22": { h: "8 LPA", a: "3.6 LPA", m: "3 LPA", p: 480, e: 580, r: 100, o: 560, status: "final" }, "2020-21": { h: "9 LPA", a: "3.4 LPA", m: "4 LPA", p: 400, e: 520, r: 85, o: 470, status: "final" } },
+            drsnsrcas: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 1717, r: 0, o: 0, status: "updating" }, "2025-26": { h: "9 LPA", a: "2.92 LPA", m: "2.28 LPA", p: 1352, e: 1717, r: 116, o: 1769, status: "final" }, "2024-25": { h: "9 LPA", a: "2.51 LPA", m: "2.34 LPA", p: 1334, e: 1584, r: 101, o: 1734, status: "final" }, "2023-24": { h: "6.1 LPA", a: "2.63 LPA", m: "2.50 LPA", p: 1173, e: 1569, r: 81, o: 1220, status: "final" }, "2022-23": { h: "7.25 LPA", a: "2.10 LPA", m: "1.88 LPA", p: 952, e: 1316, r: 53, o: 1103, status: "final" }, "2021-22": { h: "3.50 LPA", a: "2 LPA", m: "1.86 LPA", p: 549, e: 863, r: 51, o: 706, status: "final" }, "2020-21": { h: "5.8 LPA", a: "1.72 LPA", m: "1.8 LPA", p: 669, e: 961, r: 74, o: 919, status: "final" } },
+            snscnursing: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 56, r: 0, o: 0, status: "updating" }, "2025-26": { h: "2.64 LPA", a: "2.38 LPA", m: "2.38 LPA", p: 36, e: 56, r: 4, o: 36, status: "final" }, "2024-25": { h: "2.52 LPA", a: "2.28 LPA", m: "2.28 LPA", p: 30, e: 32, r: 4, o: 30, status: "final" } },
+            snscahs: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 45, r: 0, o: 0, status: "updating" }, "2025-26": { h: "5 LPA", a: "5 LPA", m: "7.8 LPA", p: 40, e: 45, r: 20, o: 100, status: "final" }, "2024-25": { h: "3.6 LPA", a: "1.8 LPA", m: "2.16 LPA", p: 52, e: 68, r: 22, o: 0, status: "final" }, "2023-24": { h: "2.4 LPA", a: "1.5 LPA", m: "1.8 LPA", p: 26, e: 31, r: 13, o: 0, status: "final" } },
+            snscphs: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 27, r: 0, o: 0, status: "updating" }, "2024-25": { h: "3.5 LPA", a: "2.5 LPA", m: "2.4 LPA", p: 27, e: 27, r: 7, o: 35, status: "final" } },
+            snscp: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 73, r: 0, o: 0, status: "updating" }, "2025-26": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129, status: "final" }, "2024-25": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129, status: "final" }, "2023-24": { h: "7.5 LPA", a: "4.05 LPA", m: "3.375 LPA", p: 53, e: 53, r: 21, o: 84, status: "final" }, "2022-23": { h: "6.5 LPA", a: "4.01 LPA", m: "3.75 LPA", p: 65, e: 68, r: 21, o: 90, status: "final" } },
         };
 
 
@@ -779,6 +796,7 @@
                     const ks = Object.keys(yearlyStats).filter(k => k.toLowerCase() !== 'all' && k.toLowerCase() !== 'overall');
                     let tp = 0, te = 0, tr = 0, to = 0, maxH = 0;
                     let avL = [], mvL = [];
+                    let hasUpdating = false;
                     ks.forEach(k => {
                         const s = yearlyStats[k]?.[y];
                         if (s) {
@@ -789,14 +807,40 @@
                             if (a > 0) avL.push(a);
                             const m = parseFloat(String(s.m).replace(/[^0-9.]/g, "")) || 0;
                             if (m > 0) mvL.push(m);
+                            if (s.status === 'updating' || (!s.status && y === '2026-27')) {
+                                hasUpdating = true;
+                            }
                         }
                     });
                     const avgA = avL.length ? (avL.reduce((sum, v) => sum + v, 0) / avL.length).toFixed(1) : "-";
                     const avgM = mvL.length ? (mvL.reduce((sum, v) => sum + v, 0) / mvL.length).toFixed(1) : "-";
-                    return { p: tp, e: te, o: to, r: tr + "+", h: maxH ? "₹" + maxH + " LPA" : "-", a: avgA !== "-" ? "₹" + avgA + " LPA" : "-", m: avgM !== "-" ? "₹" + avgM + " LPA" : "-", rate: te ? Math.round((tp / te) * 100) + "%" : "0%" };
+                    const rClean = String(tr).replace(/\+/g, '');
+                    return {
+                        p: tp,
+                        e: te,
+                        o: to,
+                        r: rClean,
+                        h: maxH ? "₹" + maxH + " LPA" : "-",
+                        a: avgA !== "-" ? "₹" + avgA + " LPA" : "-",
+                        m: avgM !== "-" ? "₹" + avgM + " LPA" : "-",
+                        rate: te ? Math.round((tp / te) * 100) + "%" : "0%",
+                        status: hasUpdating ? 'updating' : 'final'
+                    };
                 }
-                const s = yearlyStats[col]?.[y] || { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0 };
-                return { p: s.p, e: s.e, o: s.o, r: s.r + "", h: s.h, a: s.a, m: s.m, rate: s.e ? Math.round((s.p / s.e) * 100) + "%" : "0%" };
+                const s = yearlyStats[col]?.[y] || { h: "-", a: "-", m: "-", p: 0, e: 1, r: 0, o: 0, status: (y === '2026-27' ? 'updating' : 'final') };
+                const rClean = String(s.r).replace(/\+/g, '');
+                const sStatus = s.status || (y === '2026-27' ? 'updating' : 'final');
+                return {
+                    p: s.p,
+                    e: s.e,
+                    o: s.o,
+                    r: rClean,
+                    h: s.h,
+                    a: s.a,
+                    m: s.m,
+                    rate: s.e ? Math.round((s.p / s.e) * 100) + "%" : "0%",
+                    status: sStatus
+                };
             };
             const stats = sy(yr); const rate = parseInt(stats.rate);
 
@@ -861,7 +905,28 @@
 
             const navItems = [{ id: "home", icon: "🏠", l: "Home" }, { id: "dashboard", icon: "📊", l: "Dashboard" }, { id: "colleges", icon: "🏫", l: "Colleges & Depts" }, { id: "drives", icon: "🏢", l: "Company Drives" }, { id: "salary", icon: "💰", l: "Salary Analysis" }, { id: "students", icon: "🎓", l: "Placed Students" }, { id: "internships", icon: "💼", l: "Internships" }, { id: "jobs", icon: "🚀", l: "Jobs" }, { id: "training", icon: "📚", l: "Training" }, { id: "upcoming", icon: "📅", l: "Upcoming" }, { id: "facilities", icon: "🏗️", l: "Facilities" }];
             const Badge = ({ children, bg, fg }) => <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 100, fontSize: 10, fontWeight: 600, background: bg, color: fg }}>{children}</span>;
-            const StatBox = ({ v, l, c: clr = R }) => <div className="sbox"><div style={{ fontSize: 26, fontWeight: 800, color: clr, fontFamily: "'Space Mono',monospace", letterSpacing: "-0.5px" }}>{v}</div><div style={{ fontSize: 9, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 2 }}>{l}</div></div>;
+            const StatBox = ({ v, l, c: clr = R }) => {
+                let content = v;
+                if (typeof v === 'string' && v.endsWith('+')) {
+                    const base = v.slice(0, -1);
+                    content = (
+                        <span>
+                            {base}
+                            <span className="indicator" style={{ fontSize: "0.75em", opacity: 0.85, fontWeight: 700, marginLeft: 1 }}>+</span>
+                        </span>
+                    );
+                }
+                return (
+                    <div className="sbox">
+                        <div style={{ fontSize: 26, fontWeight: 800, color: clr, fontFamily: "'Space Mono',monospace", letterSpacing: "-0.5px" }}>
+                            {content}
+                        </div>
+                        <div style={{ fontSize: 9, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 2 }}>
+                            {l}
+                        </div>
+                    </div>
+                );
+            };
 
             // Sync status indicator component
             const SyncBadge = () => sheetsEnabled() ? (
@@ -995,7 +1060,8 @@
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 40 }}>
                                     {colleges.filter(c => c.id !== "snsce").map((c, i) => {
                                         const displayYear = getBestYear(c.id);
-                                        const s = yearlyStats[c.id]?.[displayYear] || { h: "-", p: 0, e: 1 };
+                                        const s = yearlyStats[c.id]?.[displayYear] || { h: "-", p: 0, e: 1, status: (displayYear === "2026-27" ? "updating" : "final") };
+                                        const isUpd = (s.status === "updating") || (!s.status && displayYear === "2026-27");
                                         const hStr = s.h ? String(s.h) : "-";
                                         const highestVal = hStr.replace(/[^0-9.]/g, '');
                                         const highestUnit = hStr.replace(/[0-9.]/g, '').trim() || "";
@@ -1007,23 +1073,34 @@
                                                 <div style={{ fontSize: 13, fontWeight: 800, color: "white", marginBottom: 14, lineHeight: 1.3 }}>{c.name}</div>
                                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 10 }}>
                                                     <div>
-                                                        <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                                                        <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
                                                             <span style={{ fontSize: 24, fontWeight: 800, color: c.color, fontFamily: "'Space Mono',monospace", lineHeight: 1 }}>{highestVal || "-"}</span>
-                                                            <span style={{ fontSize: 12, fontWeight: 700, color: c.color }}>{highestUnit}</span>
+                                                            <span style={{ fontSize: 12, fontWeight: 700, color: c.color }}>{highestUnit}{isUpd && highestVal && highestVal !== "-" ? "+" : ""}</span>
                                                         </div>
                                                         <div style={{ fontSize: 9, color: "rgba(255,255,255,.35)", marginTop: 4 }}>Highest</div>
                                                     </div>
                                                     <div>
                                                         <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
                                                             <span style={{ fontSize: 20, fontWeight: 800, color: "white", fontFamily: "'Space Mono',monospace", lineHeight: 1 }}>{s.p.toLocaleString()}</span>
-                                                            <span style={{ fontSize: 14, fontWeight: 700, color: "white" }}>+</span>
+                                                            {isUpd && <span style={{ fontSize: 14, fontWeight: 700, color: "white" }}>+</span>}
                                                         </div>
                                                         <div style={{ fontSize: 9, color: "rgba(255,255,255,.35)", marginTop: 4 }}>Placed</div>
                                                     </div>
                                                     <div>
-                                                        <div style={{ fontSize: 20, fontWeight: 800, color: "#4ECDC4", fontFamily: "'Space Mono',monospace", lineHeight: 1 }}>{Math.round((s.p / s.e) * 100) || 0}%</div>
+                                                        <div style={{ fontSize: 20, fontWeight: 800, color: "#4ECDC4", fontFamily: "'Space Mono',monospace", lineHeight: 1 }}>{Math.round((s.p / s.e) * 100) || 0}%{isUpd ? "+" : ""}</div>
                                                         <div style={{ fontSize: 9, color: "rgba(255,255,255,.35)", marginTop: 4 }}>Rate</div>
                                                     </div>
+                                                </div>
+                                                <div style={{ marginTop: 12, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,.06)", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10 }}>
+                                                    <span style={{ color: "rgba(255,255,255,.4)" }}>AY {displayYear}</span>
+                                                    {isUpd ? (
+                                                        <span style={{ color: "#F7B267", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#F7B267", animation: "pulse 1.5s infinite" }} />
+                                                            ● Data updating
+                                                        </span>
+                                                    ) : (
+                                                        <span style={{ color: "#4ECDC4", fontWeight: 600 }}>✓ Final Data</span>
+                                                    )}
                                                 </div>
                                             </div>
                                         )
@@ -1148,29 +1225,60 @@
                             </div>
 
                             {pg === "dashboard" && (<div>
-                                <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px", marginBottom: 4 }}>Placement Dashboard</h2>
-                                <p style={{ fontSize: 13, color: "#999", marginBottom: 24 }}>{col === "all" ? "All SNS Institutions" : colleges.find(c => c.id === col)?.name}{dept !== "All" ? ` · ${dept}` : ""} · {yr}</p>
-                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 28 }}>
-                                    <StatBox v={stats.p.toLocaleString() + "+"} l="Students Placed" /><StatBox v={stats.h} l="Highest CTC" /><StatBox v={stats.a} l="Avg CTC" c="#333" /><StatBox v={stats.m} l="Median CTC" c="#333" /><StatBox v={stats.r} l="Recruiters" c="#4ECDC4" /><StatBox v={stats.o.toLocaleString() + "+"} l="Total Offers" c="#7FB069" /><StatBox v={rate + "%"} l="Placement Rate" c="#F7B267" />
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 4 }}>
+                                    <div>
+                                        <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px", marginBottom: 4 }}>Placement Dashboard</h2>
+                                        <p style={{ fontSize: 13, color: "#999", marginBottom: 0 }}>{col === "all" ? "All SNS Institutions" : colleges.find(c => c.id === col)?.name}{dept !== "All" ? ` · ${dept}` : ""} · {yr}</p>
+                                    </div>
+                                    {stats.status === "updating" ? (
+                                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 100, background: "rgba(247,178,103,0.15)", border: "1px solid rgba(247,178,103,0.4)", fontSize: 12, fontWeight: 600, color: "#D97706" }}>
+                                            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#F59E0B", animation: "pulse 1.5s infinite" }} />
+                                            <span>● Data updating</span>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 100, background: "rgba(78,205,196,0.12)", border: "1px solid rgba(78,205,196,0.35)", fontSize: 12, fontWeight: 600, color: "#0D9488" }}>
+                                            <span>✓ Final Data</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginTop: 18, marginBottom: 28 }}>
+                                    <StatBox v={stats.status === "updating" ? stats.p.toLocaleString() + "+" : stats.p.toLocaleString()} l="Students Placed" />
+                                    <StatBox v={stats.status === "updating" && stats.h !== "-" ? stats.h + "+" : stats.h} l="Highest CTC" />
+                                    <StatBox v={stats.status === "updating" && stats.a !== "-" ? stats.a + "+" : stats.a} l="Avg CTC" c="#333" />
+                                    <StatBox v={stats.status === "updating" && stats.m !== "-" ? stats.m + "+" : stats.m} l="Median CTC" c="#333" />
+                                    <StatBox v={stats.status === "updating" ? stats.r + "+" : stats.r} l="Recruiters" c="#4ECDC4" />
+                                    <StatBox v={stats.status === "updating" ? stats.o.toLocaleString() + "+" : stats.o.toLocaleString()} l="Total Offers" c="#7FB069" />
+                                    <StatBox v={stats.status === "updating" ? rate + "%+" : rate + "%"} l="Placement Rate" c="#F7B267" />
                                 </div>
                                 <div className="card" style={{ padding: 24, marginBottom: 20 }}>
                                     <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Year-over-Year Trend</h3>
                                     <div style={{ overflowX: "auto" }}>
                                         <table className="tbl">
                                             <thead>
-                                                <tr><th>Year</th><th>Placed</th><th>Highest</th><th>Avg</th><th>Recruiters</th><th>Rate</th></tr>
+                                                <tr><th>Year</th><th>Status</th><th>Placed</th><th>Highest</th><th>Avg</th><th>Recruiters</th><th>Rate</th></tr>
                                             </thead>
                                             <tbody>
                                                 {availableYears.map((y, i) => {
                                                     const s = sy(y);
+                                                    const isUpd = s.status === "updating";
                                                     return (
                                                         <tr key={i} style={{ background: y === yr ? `${R}06` : "transparent" }}>
                                                             <td style={{ fontWeight: 600 }}>{y}</td>
-                                                            <td>{s.p.toLocaleString()}</td>
-                                                            <td>{s.h}</td>
-                                                            <td>{s.a}</td>
-                                                            <td>{s.r}</td>
-                                                            <td>{s.rate}</td>
+                                                            <td>
+                                                                {isUpd ? (
+                                                                    <span style={{ fontSize: 11, color: "#D97706", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                                                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F59E0B", animation: "pulse 1.5s infinite" }} />
+                                                                        ● Updating
+                                                                    </span>
+                                                                ) : (
+                                                                    <span style={{ fontSize: 11, color: "#0D9488", fontWeight: 600 }}>✓ Final</span>
+                                                                )}
+                                                            </td>
+                                                            <td>{s.p.toLocaleString()}{isUpd ? "+" : ""}</td>
+                                                            <td>{s.h}{isUpd && s.h !== "-" ? "+" : ""}</td>
+                                                            <td>{s.a}{isUpd && s.a !== "-" ? "+" : ""}</td>
+                                                            <td>{s.r}{isUpd ? "+" : ""}</td>
+                                                            <td>{s.rate}{isUpd ? "+" : ""}</td>
                                                         </tr>
                                                     );
                                                 })}
@@ -1221,9 +1329,32 @@
 
                             {pg === "colleges" && (
                                 <div>
-                                    <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Colleges & Departments</h2>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
+                                        <h2 style={{ fontSize: 22, fontWeight: 800 }}>Colleges & Departments</h2>
+                                        {(() => {
+                                            const isAnyUpd = colleges.some(c => {
+                                                const s = yearlyStats[c.id]?.[yr];
+                                                return s && (s.status === "updating" || (!s.status && yr === "2026-27"));
+                                            });
+                                            return isAnyUpd ? (
+                                                <span style={{ padding: "4px 10px", borderRadius: 100, background: "rgba(247,178,103,0.15)", border: "1px solid rgba(247,178,103,0.4)", fontSize: 11, fontWeight: 600, color: "#D97706", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                                                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F59E0B", animation: "pulse 1.5s infinite" }} />
+                                                    ● Data updating ({yr})
+                                                </span>
+                                            ) : (
+                                                <span style={{ padding: "4px 10px", borderRadius: 100, background: "rgba(78,205,196,0.12)", border: "1px solid rgba(78,205,196,0.35)", fontSize: 11, fontWeight: 600, color: "#0D9488" }}>
+                                                    ✓ Final Data ({yr})
+                                                </span>
+                                            );
+                                        })()}
+                                    </div>
                                     {colleges.filter(c => !((yr === "2025-26" || yr === "2026-27") && c.id === "snsce")).map(c => {
-                                        const s = yearlyStats[c.id]?.[yr] || { h: "-", p: 0, e: 1 };
+                                        const s = yearlyStats[c.id]?.[yr] || { h: "-", p: 0, e: 1, status: (yr === "2026-27" ? "updating" : "final") };
+                                        const isUpd = (s.status === "updating") || (!s.status && yr === "2026-27");
+                                        const hVal = s.h ? String(s.h) : "-";
+                                        const hDisplay = isUpd && hVal !== "-" ? `${hVal}+` : hVal;
+                                        const pDisplay = isUpd ? `${s.p.toLocaleString()}+` : s.p.toLocaleString();
+                                        const rDisplay = `${Math.round(s.p / s.e * 100) || 0}%${isUpd ? "+" : ""}`;
                                         return (
                                             <div key={c.id} className="card" style={{ padding: 24, marginBottom: 16, borderLeft: `4px solid ${c.color}`, cursor: "pointer" }} onClick={() => { setCol(c.id); setPg("dashboard") }}>
                                                 <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
@@ -1231,11 +1362,21 @@
                                                         <h3 style={{ fontSize: 17, fontWeight: 700 }}>{c.name}</h3>
                                                         <div style={{ fontSize: 12, color: "#999" }}>{c.accr} · Code: {c.code} · {c.poc}</div>
                                                         <div style={{ fontSize: 12, color: "#999" }}>📧 {c.email}{c.phone && ` · 📞 ${c.phone}`}</div>
+                                                        <div style={{ marginTop: 6 }}>
+                                                            {isUpd ? (
+                                                                <span style={{ fontSize: 11, color: "#D97706", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                                                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F59E0B", animation: "pulse 1.5s infinite" }} />
+                                                                    ● Data updating
+                                                                </span>
+                                                            ) : (
+                                                                <span style={{ fontSize: 11, color: "#0D9488", fontWeight: 600 }}>✓ Final Data</span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div style={{ display: "flex", gap: 10 }}>
-                                                        <StatBox v={s.h} l="Highest" />
-                                                        <StatBox v={s.p.toLocaleString()} l="Placed" />
-                                                        <StatBox v={Math.round(s.p / s.e * 100) + "%"} l="Rate" c="#4ECDC4" />
+                                                        <StatBox v={hDisplay} l="Highest" />
+                                                        <StatBox v={pDisplay} l="Placed" />
+                                                        <StatBox v={rDisplay} l="Rate" c="#4ECDC4" />
                                                     </div>
                                                 </div>
                                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
