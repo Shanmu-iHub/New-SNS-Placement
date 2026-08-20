@@ -157,14 +157,26 @@
         }));
 
         // ═══════ DATE STANDARDIZATION HELPER ═══════
-        // Rule: All dates MUST be converted to "D Month YYYY" (e.g., "1 April 2026", "17 August 2026")
-        // Day has no leading zero. Full English month name.
+        // Rule: All dates MUST be converted to "Dth Month YYYY" (e.g., "1st April 2026", "17th August 2026")
+        // Day has no leading zero but includes ordinal suffix. Full English month name.
         const formatStandardDate = (dateStr) => {
             if (!dateStr || typeof dateStr !== 'string') return '';
             let s = dateStr.trim();
             if (!s) return '';
             if (/^\d{4}-\d{2}$/.test(s)) return s;
             if (/^(upcoming|scheduled|tbd|tba|completed|ongoing|in progress)$/i.test(s)) return s;
+
+            // Ordinal suffix helper: 1 → "1st", 2 → "2nd", 3 → "3rd", 4–20 → "th", etc.
+            const ordinal = (n) => {
+                const abs = Math.abs(n);
+                const mod100 = abs % 100;
+                const mod10  = abs % 10;
+                if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+                if (mod10 === 1) return `${n}st`;
+                if (mod10 === 2) return `${n}nd`;
+                if (mod10 === 3) return `${n}rd`;
+                return `${n}th`;
+            };
 
             const MONTH_NAMES = [
                 '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -203,7 +215,7 @@
                 const mon = parseInt(m[2], 10);
                 const d = parseInt(m[3], 10);
                 if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && y > 1900) {
-                    return `${d} ${MONTH_NAMES[mon]} ${y}`;
+                    return `${ordinal(d)} ${MONTH_NAMES[mon]} ${y}`;
                 }
             }
 
@@ -214,7 +226,7 @@
                 const mon = parseInt(m[2], 10);
                 const y = normalizeYear(m[3]);
                 if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && y > 1900) {
-                    return `${d} ${MONTH_NAMES[mon]} ${y}`;
+                    return `${ordinal(d)} ${MONTH_NAMES[mon]} ${y}`;
                 }
             }
 
@@ -225,7 +237,7 @@
                 const mon = getMonthNum(m[2]);
                 const y = normalizeYear(m[3]);
                 if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && y > 1900) {
-                    return `${d} ${MONTH_NAMES[mon]} ${y}`;
+                    return `${ordinal(d)} ${MONTH_NAMES[mon]} ${y}`;
                 }
             }
 
@@ -236,7 +248,7 @@
                 const d = parseInt(m[2], 10);
                 const y = normalizeYear(m[3]);
                 if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && y > 1900) {
-                    return `${d} ${MONTH_NAMES[mon]} ${y}`;
+                    return `${ordinal(d)} ${MONTH_NAMES[mon]} ${y}`;
                 }
             }
 
