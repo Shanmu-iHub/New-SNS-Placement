@@ -139,18 +139,117 @@
             c: r.Company, p: r.Package, y: r['Academic Year'] || r.Year, cl: r.College, ct: r.Category
         }));
 
+        // ═══════ DATE STANDARDIZATION HELPER ═══════
+        // Rule: All dates MUST be converted to "D Month YYYY" (e.g., "1 April 2026", "17 August 2026")
+        // Day has no leading zero. Full English month name.
+        const formatStandardDate = (dateStr) => {
+            if (!dateStr || typeof dateStr !== 'string') return '';
+            let s = dateStr.trim();
+            if (!s) return '';
+            if (/^\d{4}-\d{2}$/.test(s)) return s;
+            if (/^(upcoming|scheduled|tbd|tba|completed|ongoing|in progress)$/i.test(s)) return s;
+
+            const MONTH_NAMES = [
+                '', 'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+
+            const getMonthNum = (mStr) => {
+                if (!mStr) return 0;
+                const clean = mStr.toLowerCase().trim();
+                const num = parseInt(clean, 10);
+                if (!isNaN(num) && num >= 1 && num <= 12) return num;
+                const prefix3 = clean.slice(0, 3);
+                const map = {
+                    jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+                    jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12
+                };
+                return map[prefix3] || 0;
+            };
+
+            const normalizeYear = (yStr) => {
+                let y = parseInt(yStr, 10);
+                if (isNaN(y)) return 0;
+                if (y < 100) {
+                    y = y < 50 ? 2000 + y : 1900 + y;
+                }
+                return y;
+            };
+
+            // Clean ordinal suffixes: 1st, 2nd, 3rd, 4th, 08th, 18th, 23rd, etc.
+            const cleaned = s.replace(/(\d+)(st|nd|rd|th)\b/gi, '$1');
+
+            // Case 1: YYYY-MM-DD or YYYY/MM/DD or YYYY.MM.DD
+            let m = cleaned.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+            if (m) {
+                const y = parseInt(m[1], 10);
+                const mon = parseInt(m[2], 10);
+                const d = parseInt(m[3], 10);
+                if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && y > 1900) {
+                    return `${d} ${MONTH_NAMES[mon]} ${y}`;
+                }
+            }
+
+            // Case 2: DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY (or 2-digit year DD/MM/YY)
+            m = cleaned.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
+            if (m) {
+                const d = parseInt(m[1], 10);
+                const mon = parseInt(m[2], 10);
+                const y = normalizeYear(m[3]);
+                if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && y > 1900) {
+                    return `${d} ${MONTH_NAMES[mon]} ${y}`;
+                }
+            }
+
+            // Case 3: D Month YYYY (e.g., "17 Aug 2026", "6-Apr-2026", "23 July 2026", "16 Apr 2025")
+            m = cleaned.match(/^(\d{1,2})[\s\-/,]+([A-Za-z]+)[\s\-/,]+(\d{2,4})$/);
+            if (m) {
+                const d = parseInt(m[1], 10);
+                const mon = getMonthNum(m[2]);
+                const y = normalizeYear(m[3]);
+                if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && y > 1900) {
+                    return `${d} ${MONTH_NAMES[mon]} ${y}`;
+                }
+            }
+
+            // Case 4: Month D, YYYY or Month D YYYY (e.g. "Apr 1, 2026", "April 1, 2026", "August 17 2026")
+            m = cleaned.match(/^([A-Za-z]+)[\s\-/,]+(\d{1,2})[\s\-,]+(\d{2,4})$/);
+            if (m) {
+                const mon = getMonthNum(m[1]);
+                const d = parseInt(m[2], 10);
+                const y = normalizeYear(m[3]);
+                if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && y > 1900) {
+                    return `${d} ${MONTH_NAMES[mon]} ${y}`;
+                }
+            }
+
+            // Case 5: Month YYYY (e.g. "Apr 2025", "June 2026")
+            m = cleaned.match(/^([A-Za-z]+)[\s\-/,]+(\d{2,4})$/);
+            if (m) {
+                const mon = getMonthNum(m[1]);
+                const y = normalizeYear(m[2]);
+                if (mon >= 1 && mon <= 12 && y > 1900) {
+                    return `${MONTH_NAMES[mon]} ${y}`;
+                }
+            }
+
+            return '';
+        };
+
         // Helper: derive academic year (Jun-May) from a date string
         const getAcademicYear = (dateStr) => {
             if (!dateStr) return null;
             const s = dateStr.trim();
             // Direct academic year format like "2024-25"
             if (/^\d{4}-\d{2}$/.test(s)) return s;
-            // Parse "16 Apr 2025", "Apr 2025", "01 Mar 2025", etc.
+            // First try standard date parsing to get month and year reliably
+            const std = formatStandardDate(s);
+            const target = std || s;
             const monthMap = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
-            const m = s.match(/(\d{1,2})?\s*([A-Za-z]+)\s*(\d{4})/);
+            const m = target.match(/(\d{1,2})?\s*([A-Za-z]+)\s*(\d{4})/);
             if (m) {
                 const mon = monthMap[m[2].toLowerCase().slice(0, 3)];
-                const year = parseInt(m[3]);
+                const year = parseInt(m[3], 10);
                 if (mon !== undefined && year) {
                     // Jun(5)–Dec = start of academic year; Jan–May = end of previous academic year
                     if (mon >= 5) return `${year}-${(year + 1).toString().slice(-2)}`;
@@ -160,17 +259,35 @@
             return null;
         };
 
-        const parseCompanyVisits = (rows) => rows.filter(r => r.company_name && r.company_name.trim()).map(r => ({
-            co: r.company_name, dt: r.drive_date, pk: r.package_range, ro: r.roles,
-            cat: r.category || "", cl: r.college_code || "all", st: r.status || "",
-            sp: r.students_placed ? parseInt(r.students_placed) : null, dept: r.department,
-            ay: r.academic_year || getAcademicYear(r.drive_date)
-        }));
+        const parseCompanyVisits = (rows) => rows.filter(r => r.company_name && r.company_name.trim()).map(r => {
+            const rawDt = (r.drive_date || "").trim();
+            const stdDt = formatStandardDate(rawDt) || rawDt;
+            return {
+                co: r.company_name,
+                dt: stdDt,
+                pk: r.package_range,
+                ro: r.roles,
+                cat: r.category || "",
+                cl: r.college_code || "all",
+                st: r.status || "",
+                sp: r.students_placed ? parseInt(r.students_placed) : null,
+                dept: r.department,
+                ay: r.academic_year || getAcademicYear(stdDt) || getAcademicYear(rawDt)
+            };
+        });
 
-        const parseUpcoming = (rows) => rows.filter(r => r.company_name && r.company_name.trim()).map(r => ({
-            co: r.company_name, dt: r.drive_date, pk: r.package_range,
-            ro: r.roles, el: r.eligibility, cl: r.college_code || "all"
-        }));
+        const parseUpcoming = (rows) => rows.filter(r => r.company_name && r.company_name.trim()).map(r => {
+            const rawDt = (r.drive_date || "").trim();
+            const stdDt = formatStandardDate(rawDt) || rawDt;
+            return {
+                co: r.company_name,
+                dt: stdDt,
+                pk: r.package_range,
+                ro: r.roles,
+                el: r.eligibility,
+                cl: r.college_code || "all"
+            };
+        });
 
         const parseSalaryBands = (rows) => {
             // Group by academic_year; if no academic_year column, treat all rows as a 'all' fallback
@@ -372,11 +489,11 @@
         ];
 
         const CV = [
-            { co: "Juspay Technologies", dt: "Apr 2025", pk: "₹10-21 LPA", ro: "SDE, Backend", cat: "IT Product", cl: "snsce", st: "In Progress", sp: null, dept: "CSE" },
-            { co: "C.R.I. Pumps Pvt Ltd", dt: "16 Apr 2025", pk: "₹3-4.5 LPA", ro: "GET", cat: "Core Engineering", cl: "snsce", st: "Completed", sp: 56, dept: "Mech" },
-            { co: "L.G. Balakrishnan & Bros", dt: "16 Apr 2025", pk: "₹3-4 LPA", ro: "Engineer Trainee", cat: "Core Engineering", cl: "snsce", st: "Completed", sp: 21, dept: "Mech" },
-            { co: "Hue Technology / Wise Work", dt: "07 Apr 2025", pk: "IT", ro: "Software Developer", cat: "IT Services", cl: "snsce", st: "Completed", sp: 9, dept: "CSE" },
-            { co: "Launched", dt: "29 Mar 2025", pk: "IT", ro: "Full Stack Developer", cat: "IT Product", cl: "snsce", st: "Completed", sp: 23, dept: "IT" },
+            { co: "Juspay Technologies", dt: "April 2025", pk: "₹10-21 LPA", ro: "SDE, Backend", cat: "IT Product", cl: "snsce", st: "In Progress", sp: null, dept: "CSE" },
+            { co: "C.R.I. Pumps Pvt Ltd", dt: "16 April 2025", pk: "₹3-4.5 LPA", ro: "GET", cat: "Core Engineering", cl: "snsce", st: "Completed", sp: 56, dept: "Mech" },
+            { co: "L.G. Balakrishnan & Bros", dt: "16 April 2025", pk: "₹3-4 LPA", ro: "Engineer Trainee", cat: "Core Engineering", cl: "snsce", st: "Completed", sp: 21, dept: "Mech" },
+            { co: "Hue Technology / Wise Work", dt: "7 April 2025", pk: "IT", ro: "Software Developer", cat: "IT Services", cl: "snsce", st: "Completed", sp: 9, dept: "CSE" },
+            { co: "Launched", dt: "29 March 2025", pk: "IT", ro: "Full Stack Developer", cat: "IT Product", cl: "snsce", st: "Completed", sp: 23, dept: "IT" },
             { co: "Accenture", dt: "2024-25", pk: "₹4-7 LPA", ro: "ASE, Analyst", cat: "IT Services", cl: "all", st: "Completed", sp: 46, dept: "Multiple" },
             { co: "Cognizant (CTS)", dt: "2024-25", pk: "₹4-6 LPA", ro: "Programmer Analyst", cat: "IT Services", cl: "all", st: "Completed", sp: 37, dept: "Multiple" },
             { co: "Intellipaat", dt: "2024-25", pk: "₹9 LPA", ro: "SDE, Trainer", cat: "IT Services", cl: "snsct", st: "Completed", sp: 8, dept: "CSE" },
@@ -385,7 +502,7 @@
             { co: "LTIMindtree", dt: "2024-25", pk: "₹4.5 LPA", ro: "Software Engineer", cat: "IT Services", cl: "snsct", st: "Off Campus", sp: null, dept: "CSE" },
             { co: "ServiceNow", dt: "2023-24", pk: "₹32 LPA", ro: "SDE", cat: "IT Product", cl: "snsct", st: "Completed", sp: 1, dept: "CSE" },
             { co: "Cadence Design", dt: "2023-24", pk: "₹15 LPA", ro: "VLSI Engineer", cat: "Core Engineering", cl: "snsct", st: "Completed", sp: 2, dept: "ECE" },
-            { co: "Sobha Constructions", dt: "25 Jul 2024", pk: "₹13.5 LPA", ro: "GET", cat: "Core Engineering", cl: "snsct", st: "Completed", sp: 3, dept: "Civil" },
+            { co: "Sobha Constructions", dt: "25 July 2024", pk: "₹13.5 LPA", ro: "GET", cat: "Core Engineering", cl: "snsct", st: "Completed", sp: 3, dept: "Civil" },
             { co: "Zoho", dt: "2024-25", pk: "₹10-14 LPA", ro: "SDE, Member Technical", cat: "IT Product", cl: "snsct", st: "Completed", sp: 5, dept: "CSE" },
             { co: "Amazon", dt: "2024-25", pk: "₹8-15 LPA", ro: "SDE", cat: "IT Product", cl: "snsct", st: "Completed", sp: 2, dept: "CSE" },
             { co: "PayPal", dt: "2024-25", pk: "₹8-12 LPA", ro: "SDE", cat: "IT Product", cl: "snsct", st: "Completed", sp: 1, dept: "CSE" },
@@ -396,23 +513,23 @@
             { co: "Capgemini", dt: "2024-25", pk: "₹4-6 LPA", ro: "Analyst", cat: "IT Services", cl: "all", st: "Completed", sp: 30, dept: "Multiple" },
             { co: "Hirotec", dt: "2024-25", pk: "₹3.5 LPA", ro: "Engineer", cat: "Core Engineering", cl: "all", st: "Completed", sp: 4, dept: "Mech" },
             { co: "Rupeek", dt: "2024-25", pk: "₹4 LPA", ro: "Business Analyst", cat: "Sales & Marketing", cl: "all", st: "Completed", sp: 15, dept: "MBA" },
-            { co: "MRF", dt: "01 Mar 2025", pk: "₹3.5-5 LPA", ro: "GET Mechanical", cat: "Core Engineering", cl: "snsce", st: "Completed", sp: 2, dept: "Mech" },
+            { co: "MRF", dt: "1 March 2025", pk: "₹3.5-5 LPA", ro: "GET Mechanical", cat: "Core Engineering", cl: "snsce", st: "Completed", sp: 2, dept: "Mech" },
             { co: "KAAR Technologies", dt: "2024-25", pk: "₹6-9 LPA", ro: "SAP Consultant", cat: "IT Services", cl: "snsct", st: "Completed", sp: 6, dept: "CSE" },
-            { co: "ClaySys Technologies", dt: "03 Jul 2024", pk: "₹1.92-4.2 LPA", ro: "Intern → FTE", cat: "IT Services", cl: "snsct", st: "Completed", sp: 3, dept: "CSE" },
+            { co: "ClaySys Technologies", dt: "3 July 2024", pk: "₹1.92-4.2 LPA", ro: "Intern → FTE", cat: "IT Services", cl: "snsct", st: "Completed", sp: 3, dept: "CSE" },
             { co: "Tech Mahindra", dt: "2024-25", pk: "₹3.5-5 LPA", ro: "Software Engineer", cat: "IT Services", cl: "all", st: "Completed", sp: 25, dept: "Multiple" },
             { co: "TAFE", dt: "2024-25", pk: "₹3-4.5 LPA", ro: "GET", cat: "Core Engineering", cl: "snsct", st: "Completed", sp: 10, dept: "Mech" },
             { co: "TNS India Foundation", dt: "2024-25", pk: "₹3-4 LPA", ro: "Analyst", cat: "Analytics & Data", cl: "drsnsrcas", st: "Scheduled", sp: null, dept: "BCA" },
             { co: "CavinKare", dt: "2024-25", pk: "₹3-4.5 LPA", ro: "Sales, Analyst", cat: "Sales & Marketing", cl: "drsnsrcas", st: "Scheduled", sp: null, dept: "BBA" },
             { co: "Codingmart", dt: "2024-25", pk: "₹4-6 LPA", ro: "Full Stack Dev", cat: "IT Product", cl: "drsnsrcas", st: "Scheduled", sp: null, dept: "BCA" },
             { co: "Shloklabs", dt: "2024-25", pk: "₹3.5-5 LPA", ro: "Software Dev", cat: "IT Product", cl: "drsnsrcas", st: "Scheduled", sp: null, dept: "B.Sc CS" },
-            { co: "Stahllform Technik", dt: "12 Mar 2025", pk: "₹3-4 LPA", ro: "Engineer", cat: "Core Engineering", cl: "snsce", st: "Completed", sp: 8, dept: "Mech" },
-            { co: "Pinnacle Infotech", dt: "28 Feb 2025", pk: "IT", ro: "Software Dev", cat: "IT Services", cl: "snsce", st: "Completed", sp: 5, dept: "CSE" },
+            { co: "Stahllform Technik", dt: "12 March 2025", pk: "₹3-4 LPA", ro: "Engineer", cat: "Core Engineering", cl: "snsce", st: "Completed", sp: 8, dept: "Mech" },
+            { co: "Pinnacle Infotech", dt: "28 February 2025", pk: "IT", ro: "Software Dev", cat: "IT Services", cl: "snsce", st: "Completed", sp: 5, dept: "CSE" },
             { co: "Flowserve", dt: "2024-25", pk: "₹3.5-5 LPA", ro: "Engineer", cat: "Core Engineering", cl: "snsce", st: "On Campus", sp: null, dept: "Mech" },
             { co: "Meesho (Intern)", dt: "2024-25", pk: "Stipend", ro: "Data Analyst, SDE, DevOps Intern", cat: "IT Product", cl: "all", st: "Internship", sp: null, dept: "Multiple" },
         ];
 
         const UPCOMING = [
-            { co: "Juspay Technologies", dt: "Apr 2025", pk: "₹10-21 LPA", ro: "SDE, Backend", el: "CSE/IT — 7+ CGPA", cl: "snsce" },
+            { co: "Juspay Technologies", dt: "April 2025", pk: "₹10-21 LPA", ro: "SDE, Backend", el: "CSE/IT — 7+ CGPA", cl: "snsce" },
             { co: "Policy Bazaar", dt: "Upcoming", pk: "₹4-6 LPA", ro: "Analyst, SDE", el: "CSE/IT/ECE — 6.5+", cl: "snsct" },
             { co: "Hyperface", dt: "Upcoming", pk: "₹6-10 LPA", ro: "SDE", el: "CSE/IT — 7+", cl: "snsct" },
             { co: "BlogVault", dt: "Upcoming", pk: "₹5-8 LPA", ro: "SDE, QA", el: "CSE/IT — 6.5+", cl: "snsct" },
@@ -1150,7 +1267,7 @@
                                                 {fv.slice((vPage - 1) * 50, vPage * 50).map((v, i) => (
                                                     <tr key={i}>
                                                         <td style={{ fontWeight: 600 }}>{v.co}</td>
-                                                        <td style={{ fontSize: 12, color: "#888" }}>{v.dt}</td>
+                                                        <td style={{ fontSize: 12, color: "#888" }}>{formatStandardDate(v.dt) || v.dt}</td>
                                                         <td style={{ fontSize: 12, color: "#666" }}>{v.ro}</td>
                                                         <td><Badge bg={(v.cat || "").includes("IT Prod") ? "#E3F2FD" : (v.cat || "").includes("Core") ? "#FFF3E0" : (v.cat || "").includes("Sales") ? "#F3E5F5" : "#E8F5E9"} fg={(v.cat || "").includes("IT Prod") ? "#1565C0" : (v.cat || "").includes("Core") ? "#E65100" : (v.cat || "").includes("Sales") ? "#7B1FA2" : "#2E7D32"}>{v.cat || "Other"}</Badge></td>
                                                         <td style={{ fontSize: 12 }}>{v.cl === "all" ? "All" : (v.cl || "").toUpperCase()}</td>
@@ -1296,7 +1413,7 @@
 
                             {pg === "training" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Training Programs</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginBottom: 28 }}>{Object.values(trainingData).map((t, i) => (<div key={i} className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, color: R, marginBottom: 4 }}>{t.t}</h3><div style={{ fontSize: 11, color: "#999", fontWeight: 600, marginBottom: 8 }}>Partner: {t.p}</div><p style={{ fontSize: 12, color: "#666", lineHeight: 1.6, marginBottom: 12 }}>{t.d}</p><div style={{ display: "flex", flexDirection: "column", gap: 5 }}>{t.m.map((m, j) => <div key={j} style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ width: 4, height: 4, borderRadius: "50%", background: R, flexShrink: 0 }} /><span style={{ fontSize: 12, color: "#555" }}>{m}</span></div>)}</div></div>))}</div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Training Platforms</h3><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10, marginBottom: 28 }}>{platformData.map((p, i) => <div key={i} className="card" style={{ padding: 14 }}><div style={{ fontSize: 13, fontWeight: 700 }}>{p.n}</div><div style={{ fontSize: 11, color: "#888" }}>{p.u}</div></div>)}</div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Global Certifications — {[...certData.it, ...certData.core].reduce((s, c) => s + c.c, 0).toLocaleString()}+</h3><div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}><div className="card" style={{ padding: 20, flex: "1 1 340px" }}><h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>IT Certifications</h4>{certData.it.map((c, i) => <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #f5f5f5" }}><span style={{ fontSize: 12 }}>{c.n}</span><span style={{ fontSize: 13, fontWeight: 800, color: c.cl, fontFamily: "'Space Mono',monospace" }}>{c.c.toLocaleString()}</span></div>)}</div><div className="card" style={{ padding: 20, flex: "1 1 240px" }}><h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Core Certifications</h4>{certData.core.map((c, i) => <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #f5f5f5" }}><span style={{ fontSize: 12 }}>{c.n}</span><span style={{ fontSize: 13, fontWeight: 800, color: c.cl, fontFamily: "'Space Mono',monospace" }}>{c.c}</span></div>)}</div></div></div>)}
 
-                            {pg === "upcoming" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Upcoming Drives & Certifications</h2><p style={{ fontSize: 13, color: "#999", marginBottom: 24 }}>Track drives and certification availability for YOP 2026.</p><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>📅 Upcoming Drives</h3><div className="card" style={{ overflow: "auto", marginBottom: 28 }}><table className="tbl"><thead><tr><th>Company</th><th>Date</th><th>Package</th><th>Roles</th><th>Eligibility</th><th>College</th></tr></thead><tbody>{upcoming.filter(d => col === "all" || d.cl === col).map((d, i) => (<tr key={i}><td style={{ fontWeight: 700 }}>{d.co}</td><td><Badge bg="#FFF3E0" fg="#E65100">{d.dt}</Badge></td><td style={{ fontWeight: 600, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{d.pk}</td><td style={{ fontSize: 12, color: "#666" }}>{d.ro}</td><td style={{ fontSize: 11, color: "#888" }}>{d.el}</td><td style={{ fontSize: 12 }}>{d.cl.toUpperCase()}</td></tr>))}</tbody></table></div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>🏅 Certified Talent Pool for Recruiters</h3><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>{(() => { const deptMap = { "Microsoft": "CSE, IT", "Databricks": "AI&DS, CSE", "AWS": "CSE, IT, ECE", "Snowflake": "CSE, IT", "Salesforce": "CSE, MBA", "NVIDIA": "AI&ML", "Oracle": "CSE, IT", "Google": "All Depts", "ServiceNow": "CSE, IT", "CATIA": "Mech, Aero", "FOSTAC": "Food Tech", "HACCP": "Food Tech", "BIM": "Civil", "CAD Design": "Mech, Civil" }; return [...certData.it, ...certData.core].map((c, i) => (<div key={i} className="card" style={{ padding: 14 }}><div style={{ fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{c.n}</div><div style={{ fontSize: 20, fontWeight: 800, color: c.cl || R, fontFamily: "'Space Mono',monospace" }}>{c.c.toLocaleString()}</div><div style={{ fontSize: 10, color: "#999" }}>Depts: {deptMap[c.n] || "All Depts"}</div><Badge bg="#E8F5E9" fg="#2E7D32">Available</Badge></div>)); })()}</div></div>)}
+                            {pg === "upcoming" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Upcoming Drives & Certifications</h2><p style={{ fontSize: 13, color: "#999", marginBottom: 24 }}>Track drives and certification availability for YOP 2026.</p><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>📅 Upcoming Drives</h3><div className="card" style={{ overflow: "auto", marginBottom: 28 }}><table className="tbl"><thead><tr><th>Company</th><th>Date</th><th>Package</th><th>Roles</th><th>Eligibility</th><th>College</th></tr></thead><tbody>{upcoming.filter(d => col === "all" || d.cl === col).map((d, i) => (<tr key={i}><td style={{ fontWeight: 700 }}>{d.co}</td><td><Badge bg="#FFF3E0" fg="#E65100">{formatStandardDate(d.dt) || d.dt}</Badge></td><td style={{ fontWeight: 600, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{d.pk}</td><td style={{ fontSize: 12, color: "#666" }}>{d.ro}</td><td style={{ fontSize: 11, color: "#888" }}>{d.el}</td><td style={{ fontSize: 12 }}>{d.cl.toUpperCase()}</td></tr>))}</tbody></table></div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>🏅 Certified Talent Pool for Recruiters</h3><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>{(() => { const deptMap = { "Microsoft": "CSE, IT", "Databricks": "AI&DS, CSE", "AWS": "CSE, IT, ECE", "Snowflake": "CSE, IT", "Salesforce": "CSE, MBA", "NVIDIA": "AI&ML", "Oracle": "CSE, IT", "Google": "All Depts", "ServiceNow": "CSE, IT", "CATIA": "Mech, Aero", "FOSTAC": "Food Tech", "HACCP": "Food Tech", "BIM": "Civil", "CAD Design": "Mech, Civil" }; return [...certData.it, ...certData.core].map((c, i) => (<div key={i} className="card" style={{ padding: 14 }}><div style={{ fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{c.n}</div><div style={{ fontSize: 20, fontWeight: 800, color: c.cl || R, fontFamily: "'Space Mono',monospace" }}>{c.c.toLocaleString()}</div><div style={{ fontSize: 10, color: "#999" }}>Depts: {deptMap[c.n] || "All Depts"}</div><Badge bg="#E8F5E9" fg="#2E7D32">Available</Badge></div>)); })()}</div></div>)}
 
                             {pg === "facilities" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Campus Placement Facilities</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>{facilityData.map((f, i) => <div key={i} className="card" style={{ padding: 18, display: "flex", gap: 12, alignItems: "flex-start" }}><div style={{ fontSize: 26, flexShrink: 0 }}>{f.i}</div><div><div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{f.t}</div><div style={{ fontSize: 12, color: "#888" }}>{f.d}</div></div></div>)}</div><div className="card" style={{ padding: 24, marginTop: 20, borderLeft: `4px solid ${R}` }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>IIPC Mission</h3><p style={{ fontSize: 13, color: "#666", lineHeight: 1.7 }}>The Industry Institute Partnership Cell synergizes academic activities with industry needs through strategic planning. SNSCT IIPC functions with excellent rapport with industries in and around Coimbatore — offering technical consultancy, latest engineering courses, sponsored R&D, seminars, workshops, and industrial training programmes.</p></div></div>)}
 
