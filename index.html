@@ -87,7 +87,7 @@
                 console.error(`Google API Error for ${sheetName}:`, json.error);
                 throw new Error(json.error.message);
             }
-            
+
             const rows = json.values;
             if (!rows || rows.length < 2) return { data: [], fromCache: false };
 
@@ -170,7 +170,7 @@
             const ordinal = (n) => {
                 const abs = Math.abs(n);
                 const mod100 = abs % 100;
-                const mod10  = abs % 10;
+                const mod10 = abs % 10;
                 if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
                 if (mod10 === 1) return `${n}st`;
                 if (mod10 === 2) return `${n}nd`;
@@ -390,7 +390,7 @@
 
         const parseJobsInternships = (data) => {
             if (!data || data.length === 0) return [];
-            
+
             const originalHeaders = Object.keys(data[0]);
             const getHeader = (keys) => originalHeaders.find(h => keys.some(k => (h || "").toLowerCase().includes(k)));
 
@@ -399,14 +399,14 @@
             const locH = getHeader(['location', 'city', 'place']);
             const skillH = getHeader(['skill', 'requirement', 'detail', 'description']);
             const imgH = getHeader(['image', 'logo', 'photo']);
-            
+
             // Correctly distinguish between Apply Link and Image Link
             // We prioritize 'apply' or links that don't mention 'image' for the application link
             const linkH = originalHeaders.find(h => {
                 const l = (h || "").toLowerCase();
                 return l.includes('apply') || (l.includes('link') && !l.includes('image') && !l.includes('logo'));
             }) || getHeader(['link', 'apply', 'url']);
-            
+
             const modeH = getHeader(['mode', 'type', 'nature']);
 
             return data.map((r, i) => {
@@ -614,20 +614,20 @@
             }, []);
 
             const [col, setCol] = useState("all");
-            const [yr, setYr] = useState("2025-26");
+            const [yr, setYr] = useState("2026-27");
             const [dept, setDept] = useState("All");
             const [catF, setCatF] = useState("all");
             const [search, setSearch] = useState("");
             const [tIdx, setTIdx] = useState(0);
             const [sPage, setSPage] = useState(1);
             const [vPage, setVPage] = useState(1);
-            const [salaryYr, setSalaryYr] = useState("2025-26");
+            const [salaryYr, setSalaryYr] = useState("2026-27");
             const [selectedInternship, setSelectedInternship] = useState(null);
             const [selectedJob, setSelectedJob] = useState(null);
 
             const getBestYear = useCallback((id) => {
-                // Return 2025-26 as the default best year for all colleges for the current cycle
-                return '2025-26';
+                // Return 2026-27 as the default best year for all colleges for the current cycle
+                return '2026-27';
             }, []);
 
             // ═══ Dynamic Data State (initialized with hardcoded defaults) ═══
@@ -725,7 +725,7 @@
                 const params = new URLSearchParams(window.location.search);
                 const type = params.get('type');
                 const id = params.get('id');
-                
+
                 if (type && id) {
                     if (type === 'internship') {
                         const item = internshipData.find(i => String(i.id) === id);
@@ -749,7 +749,7 @@
                 const url = new URL(window.location.href);
                 url.searchParams.set('type', type);
                 url.searchParams.set('id', item.id);
-                
+
                 navigator.clipboard.writeText(url.toString()).then(() => {
                     alert('Share link copied to clipboard!');
                 }).catch(err => {
@@ -859,10 +859,10 @@
                 const ks = Object.keys(yearlyStats).filter(k => k.toLowerCase() !== 'all' && k.toLowerCase() !== 'overall');
                 let tp = 0, tr = 0, to = 0, te = 0, maxH = 0;
                 let avL = [], mvL = [];
-                const targetYear = "2025-26";
+                const targetYear = "2026-27";
 
                 ks.forEach(k => {
-                    // Try to get data for 2025-26 first, then fall back to latest available if not found
+                    // Try to get data for 2026-27 first, then fall back to latest available if not found
                     let s = yearlyStats[k]?.[targetYear];
                     if (!s || (s.p === 0 && s.r === 0)) {
                         const latestY = YEARS.find(y => yearlyStats[k][y] && (yearlyStats[k][y].p > 0 || yearlyStats[k][y].r > 0));
@@ -1107,7 +1107,7 @@
                                                     {isUpd ? (
                                                         <span style={{ color: "#F7B267", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
                                                             <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#F7B267", animation: "pulse 1.5s infinite" }} />
-                                                            ● Data updating
+                                                            Data updating
                                                         </span>
                                                     ) : (
                                                         <span style={{ color: "#4ECDC4", fontWeight: 600 }}>✓ Final Data</span>
@@ -1183,7 +1183,7 @@
                                         <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: "white" }}>Contact Us</h4>
                                         <div style={{ display: "flex", flexDirection: "column", gap: 14, fontSize: 13, color: "rgba(255,255,255,.6)" }}>
                                             <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><i className="fas fa-envelope" style={{ marginTop: 4, color: R }}></i> <a href="mailto:director.iipc.sns@gmail.com" style={{ color: "rgba(255,255,255,.6)", textDecoration: "none", transition: "color .2s" }} className="hover-text">director.iipc.sns@gmail.com</a></div>
-                                            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><i className="fas fa-phone-alt" style={{ marginTop: 4, color: R, transform: "rotate(90deg)" }}></i> <div><a href="tel:+919566423456" style={{ color: "rgba(255,255,255,.6)", textDecoration: "none", transition: "color .2s" }} className="hover-text">+91 95664 23456</a> / <a href="tel:+917530093730" style={{ color: "rgba(255,255,255,.6)", textDecoration: "none", transition: "color .2s" }} className="hover-text">75300 93730</a></div></div>
+                                            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><i className="fas fa-phone-alt" style={{ marginTop: 4, color: R, transform: "rotate(90deg)" }}></i> <div><a href="tel:+919566423456" style={{ color: "rgba(255,255,255,.6)", textDecoration: "none", transition: "color .2s" }} className="hover-text">+91 95664 23456</a></div></div>
                                             <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><i className="fas fa-map-marker-alt" style={{ marginTop: 4, color: R }}></i> <div>SRI SNS Charitable Trust,<br />Coimbatore - 641 029, Tamil Nadu</div></div>
                                         </div>
                                     </div>
@@ -1244,7 +1244,7 @@
                                     {stats.status === "updating" ? (
                                         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 100, background: "rgba(247,178,103,0.15)", border: "1px solid rgba(247,178,103,0.4)", fontSize: 12, fontWeight: 600, color: "#D97706" }}>
                                             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#F59E0B", animation: "pulse 1.5s infinite" }} />
-                                            <span>● Data updating</span>
+                                            <span>Data updating</span>
                                         </div>
                                     ) : (
                                         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 100, background: "rgba(78,205,196,0.12)", border: "1px solid rgba(78,205,196,0.35)", fontSize: 12, fontWeight: 600, color: "#0D9488" }}>
@@ -1279,7 +1279,7 @@
                                                                 {isUpd ? (
                                                                     <span style={{ fontSize: 11, color: "#D97706", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
                                                                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F59E0B", animation: "pulse 1.5s infinite" }} />
-                                                                        ● Updating
+                                                                        Updating
                                                                     </span>
                                                                 ) : (
                                                                     <span style={{ fontSize: 11, color: "#0D9488", fontWeight: 600 }}>✓ Final</span>
@@ -1350,7 +1350,7 @@
                                             return isAnyUpd ? (
                                                 <span style={{ padding: "4px 10px", borderRadius: 100, background: "rgba(247,178,103,0.15)", border: "1px solid rgba(247,178,103,0.4)", fontSize: 11, fontWeight: 600, color: "#D97706", display: "inline-flex", alignItems: "center", gap: 5 }}>
                                                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F59E0B", animation: "pulse 1.5s infinite" }} />
-                                                    ● Data updating ({yr})
+                                                    Data updating ({yr})
                                                 </span>
                                             ) : (
                                                 <span style={{ padding: "4px 10px", borderRadius: 100, background: "rgba(78,205,196,0.12)", border: "1px solid rgba(78,205,196,0.35)", fontSize: 11, fontWeight: 600, color: "#0D9488" }}>
@@ -1377,7 +1377,7 @@
                                                             {isUpd ? (
                                                                 <span style={{ fontSize: 11, color: "#D97706", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
                                                                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F59E0B", animation: "pulse 1.5s infinite" }} />
-                                                                    ● Data updating
+                                                                    Data updating
                                                                 </span>
                                                             ) : (
                                                                 <span style={{ fontSize: 11, color: "#0D9488", fontWeight: 600 }}>✓ Final Data</span>
@@ -1665,9 +1665,9 @@
                                             <p style={{ fontSize: 14, color: "#555", lineHeight: 1.8 }}>{item.skills}</p>
                                         </div>
 
-                                        <button 
-                                            style={{ background: R, color: "white", border: "none", padding: "18px 32px", borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: "pointer", width: "100%", transition: "all 0.2s", boxShadow: `0 8px 20px ${R}40` }} 
-                                            onMouseOver={e => e.target.style.transform = 'translateY(-2px)'} 
+                                        <button
+                                            style={{ background: R, color: "white", border: "none", padding: "18px 32px", borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: "pointer", width: "100%", transition: "all 0.2s", boxShadow: `0 8px 20px ${R}40` }}
+                                            onMouseOver={e => e.target.style.transform = 'translateY(-2px)'}
                                             onMouseOut={e => e.target.style.transform = 'translateY(0)'}
                                             onClick={() => item.link && item.link !== "#" ? window.open(item.link, '_blank') : alert('Application link not available')}
                                         >Apply Now</button>
