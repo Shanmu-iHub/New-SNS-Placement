@@ -120,6 +120,7 @@ const testCases = [
 ];
 
 let allPassed = true;
+
 testCases.forEach(([input, expected]) => {
     const result = formatStandardDate(input);
     if (result !== expected) {
@@ -129,9 +130,146 @@ testCases.forEach(([input, expected]) => {
         console.log('PASS:', input, '=>', result);
     }
 });
+const formatMonthYearDate = (dateStr) => {
+    if (!dateStr || typeof dateStr !== 'string') return '';
+    let s = dateStr.trim();
+    if (!s) return '';
+    if (/^\d{4}-\d{2}$/.test(s)) return s;
+    if (/^(upcoming|scheduled|tbd|tba|completed|ongoing|in progress)$/i.test(s)) return s;
+
+    const std = formatStandardDate(s);
+    const target = std || s;
+    const m = target.match(/([A-Za-z]+)\s*(\d{4})/);
+    if (m) {
+        return `${m[1]} ${m[2]}`;
+    }
+    return target;
+};
+
+const monthYearTestCases = [
+    ['1st December 2025', 'December 2025'],
+    ['8th August 2025', 'August 2025'],
+    ['26th July 2025', 'July 2025'],
+    ['25th February 2026', 'February 2026'],
+    ['2nd October 2026', 'October 2026'],
+    ['13th September 2025', 'September 2025'],
+    ['01/04/2026', 'April 2026']
+];
+
+monthYearTestCases.forEach(([input, expected]) => {
+    const result = formatMonthYearDate(input);
+    if (result !== expected) {
+        console.error('FAIL MonthYear:', input, '=> got:', JSON.stringify(result), 'expected:', JSON.stringify(expected));
+        allPassed = false;
+    } else {
+        console.log('PASS MonthYear:', input, '=>', result);
+    }
+});
+
+const formatTitleCaseWithBrackets = (str) => {
+    if (!str || typeof str !== 'string') return str || '';
+    let trimmed = str.trim();
+    if (!trimmed) return '';
+
+    const ACRONYMS = {
+        'be': 'BE', 'b.e': 'B.E', 'btech': 'BTech', 'b.tech': 'B.Tech',
+        'me': 'ME', 'm.e': 'M.E', 'mtech': 'MTech', 'm.tech': 'M.Tech',
+        'mba': 'MBA', 'mca': 'MCA', 'msc': 'MSc', 'm.sc': 'M.Sc',
+        'bsc': 'BSc', 'b.sc': 'B.Sc', 'bba': 'BBA', 'bcom': 'BCom', 'b.com': 'B.Com', 'bca': 'BCA',
+        'ug': 'UG', 'pg': 'PG', 'cse': 'CSE', 'it': 'IT', 'ece': 'ECE', 'eee': 'EEE',
+        'cst': 'CST', 'csd': 'CSD', 'aids': 'AIDS', 'aiml': 'AIML', 'cs': 'CS', 'ds': 'DS',
+        'ai': 'AI', 'ml': 'ML', 'mech': 'Mech', 'nsa': 'NSA', 'sde': 'SDE', 'hr': 'HR',
+        'qa': 'QA', 'r&d': 'R&D', 'cgpa': 'CGPA', 'lpa': 'LPA', 'ctc': 'CTC',
+        'pvt': 'Pvt', 'ltd': 'Ltd', 'llc': 'LLC', 'gd': 'GD', 'pi': 'PI',
+        'adas': 'ADAS', 'get': 'GET', 'ase': 'ASE', 'ui': 'UI', 'ux': 'UX', 'seo': 'SEO',
+        'cppct': 'CPPCT', 'ct': 'CT', 'tmt': 'TMT'
+    };
+
+    return trimmed.replace(/(\([^)]*\))|([^\(\)]+)/g, (match, brackets, text) => {
+        if (brackets) {
+            return brackets.toUpperCase();
+        }
+        if (text) {
+            return text.replace(/\b[a-zA-Z.]+\b/g, (word) => {
+                const lower = word.toLowerCase();
+                if (ACRONYMS[lower]) {
+                    return ACRONYMS[lower];
+                }
+                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+            });
+        }
+        return match;
+    });
+};
+
+const casingTestCases = [
+    ['software development engineer (sde)', 'Software Development Engineer (SDE)'],
+    ['SOFTWARE DEVELOPMENT ENGINEER (sde)', 'Software Development Engineer (SDE)'],
+    ['analysist', 'Analysist'],
+    ['business development executive / lead generation executive (revops)', 'Business Development Executive / Lead Generation Executive (REVOPS)'],
+    ['ALFRAH COGNIX INNOVATION PVT. LTD.', 'Alfrah Cognix Innovation Pvt. Ltd.'],
+    ['HI MANDO ANAND INDIA PRIVATE LIMITED', 'Hi Mando Anand India Private Limited'],
+    ['B.E -Civil, Mechanical, Electrical-70% & Above - Nsa', 'B.E -Civil, Mechanical, Electrical-70% & Above - NSA'],
+    ['Be/Btech-60 % & Above - Nsa', 'BE/BTech-60 % & Above - NSA'],
+    ['Be /Btech - Cse/It/Cst/Csd/Aids/Aiml/Ece- 60% & Above - Nsa', 'BE /BTech - CSE/IT/CST/CSD/AIDS/AIML/ECE- 60% & Above - NSA'],
+    ['Be Mechatronics, Mech, Eee,Ece & Auto Students', 'BE Mechatronics, Mech, EEE,ECE & Auto Students'],
+    ['Mba Graduates', 'MBA Graduates'],
+    ['Mca & Msc Cs', 'MCA & MSc CS'],
+    ['Ug Commerce & Management', 'UG Commerce & Management'],
+    ['corizo', 'Corizo'],
+    ['crecsent Infotech', 'Crecsent Infotech'],
+    ['Empty brain Creation', 'Empty Brain Creation'],
+    ['Infotact solutions', 'Infotact Solutions'],
+    ['lecturer - cppct', 'Lecturer - CPPCT'],
+    ['lecturer-ct', 'Lecturer-CT'],
+    ['tmt technologist', 'TMT Technologist']
+];
+
+casingTestCases.forEach(([input, expected]) => {
+    const result = formatTitleCaseWithBrackets(input);
+    if (result !== expected) {
+        console.error('FAIL Casing:', input, '=> got:', JSON.stringify(result), 'expected:', JSON.stringify(expected));
+        allPassed = false;
+    } else {
+        console.log('PASS Casing:', input, '=>', result);
+    }
+});
+
+const formatStudentName = (name) => {
+    if (!name || typeof name !== 'string') return name || '';
+    let trimmed = name.trim();
+    if (!trimmed) return '';
+
+    return trimmed.replace(/\b[a-zA-Z]+\b/g, (word) => {
+        if (word.length <= 2) {
+            return word.toUpperCase();
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    });
+};
+
+const studentNameTestCases = [
+    ['AKELAN SS', 'Akelan SS'],
+    ['akelan ss', 'Akelan SS'],
+    ['DELINA SHALY A', 'Delina Shaly A'],
+    ['jeisy afrina ds', 'Jeisy Afrina DS'],
+    ['hilal ahammed', 'Hilal Ahammed'],
+    ['syed adhil mohammed', 'Syed Adhil Mohammed'],
+    ['riswana nasrin', 'Riswana Nasrin']
+];
+
+studentNameTestCases.forEach(([input, expected]) => {
+    const result = formatStudentName(input);
+    if (result !== expected) {
+        console.error('FAIL StudentName:', input, '=> got:', JSON.stringify(result), 'expected:', JSON.stringify(expected));
+        allPassed = false;
+    } else {
+        console.log('PASS StudentName:', input, '=>', result);
+    }
+});
 
 if (!allPassed) {
-    console.error('Date test failed');
+    console.error('Test suite failed');
     process.exit(1);
 }
 

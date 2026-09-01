@@ -208,8 +208,8 @@
             // Clean ordinal suffixes: 1st, 2nd, 3rd, 4th, 08th, 18th, 23rd, etc.
             const cleaned = s.replace(/(\d+)(st|nd|rd|th)\b/gi, '$1');
 
-            // Case 1: YYYY-MM-DD or YYYY/MM/DD or YYYY.MM.DD
-            let m = cleaned.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+            // Case 1: YYYY-MM-DD or YYYY/MM/DD or YYYY.MM.DD or YYYY MM DD
+            let m = cleaned.match(/^(\d{4})[\s\-/.=,]+(\d{1,2})[\s\-/.=,]+(\d{1,2})$/);
             if (m) {
                 const y = parseInt(m[1], 10);
                 const mon = parseInt(m[2], 10);
@@ -219,12 +219,28 @@
                 }
             }
 
-            // Case 2: DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY (or 2-digit year DD/MM/YY)
-            m = cleaned.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
+            // Case 2: All numeric MM/DD/YYYY, DD/MM/YYYY, or M D YYYY (e.g., "9 18 2024", "9/18/2024", "18-09-2024")
+            m = cleaned.match(/^(\d{1,2})[\s\-/.=,]+(\d{1,2})[\s\-/.=,]+(\d{2,4})$/);
             if (m) {
-                const d = parseInt(m[1], 10);
-                const mon = parseInt(m[2], 10);
+                const p1 = parseInt(m[1], 10);
+                const p2 = parseInt(m[2], 10);
                 const y = normalizeYear(m[3]);
+                let mon = 0, d = 0;
+
+                if (p1 <= 12 && p2 > 12) {
+                    // M D YYYY format e.g. 9 18 2024 -> Sep 18, 2024
+                    mon = p1;
+                    d = p2;
+                } else if (p2 <= 12 && p1 > 12) {
+                    // D M YYYY format e.g. 18 9 2024 -> Sep 18, 2024
+                    d = p1;
+                    mon = p2;
+                } else if (p1 <= 12 && p2 <= 12) {
+                    // Default to M D YYYY for standard MM/DD/YYYY
+                    mon = p1;
+                    d = p2;
+                }
+
                 if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && y > 1900) {
                     return `${ordinal(d)} ${MONTH_NAMES[mon]} ${y}`;
                 }
@@ -252,7 +268,7 @@
                 }
             }
 
-            // Case 5: Month YYYY (e.g. "Apr 2025", "June 2026")
+            // Case 5: Month YYYY (e.g. "Apr 2025", "June 2026", "September 2024")
             m = cleaned.match(/^([A-Za-z]+)[\s\-/,]+(\d{2,4})$/);
             if (m) {
                 const mon = getMonthNum(m[1]);
@@ -262,14 +278,92 @@
                 }
             }
 
+            // Case 6: Numeric Month Year (e.g. "9 2024", "09/2024", "9-2024")
+            m = cleaned.match(/^(\d{1,2})[\s\-/.=,]+(\d{4})$/);
+            if (m) {
+                const mon = parseInt(m[1], 10);
+                const y = parseInt(m[2], 10);
+                if (mon >= 1 && mon <= 12 && y > 1900) {
+                    return `${MONTH_NAMES[mon]} ${y}`;
+                }
+            }
+
             return '';
         };
 
-        // Helper: derive academic year (Jun-May) from a date string
+        // Helper: format date as "Month YYYY" (e.g. "September 2024", "August 2026", "December 2025")
+        const formatMonthYearDate = (dateStr) => {
+            if (!dateStr || typeof dateStr !== 'string') return '';
+            let s = dateStr.trim();
+            if (!s) return '';
+            if (/^\d{4}-\d{2}$/.test(s)) return s;
+            if (/^(upcoming|scheduled|tbd|tba|completed|ongoing|in progress)$/i.test(s)) return s;
+
+            const std = formatStandardDate(s);
+            const target = std || s;
+            const m = target.match(/([A-Za-z]+)\s*(\d{4})/);
+            if (m) {
+                return `${m[1]} ${m[2]}`;
+            }
+            return target;
+        };
+
+        // Helper: format string to Title Case (Word First Caps), preserve core degree/dept acronyms, and UPPERCASE inside brackets ()
+        const formatTitleCaseWithBrackets = (str) => {
+            if (!str || typeof str !== 'string') return str || '';
+            let trimmed = str.trim();
+            if (!trimmed) return '';
+
+            const ACRONYMS = {
+                'be': 'BE', 'b.e': 'B.E', 'btech': 'BTech', 'b.tech': 'B.Tech',
+                'me': 'ME', 'm.e': 'M.E', 'mtech': 'MTech', 'm.tech': 'M.Tech',
+                'mba': 'MBA', 'mca': 'MCA', 'msc': 'MSc', 'm.sc': 'M.Sc',
+                'bsc': 'BSc', 'b.sc': 'B.Sc', 'bba': 'BBA', 'bcom': 'BCom', 'b.com': 'B.Com', 'bca': 'BCA',
+                'ug': 'UG', 'pg': 'PG', 'cse': 'CSE', 'it': 'IT', 'ece': 'ECE', 'eee': 'EEE',
+                'cst': 'CST', 'csd': 'CSD', 'aids': 'AIDS', 'aiml': 'AIML', 'cs': 'CS', 'ds': 'DS',
+                'ai': 'AI', 'ml': 'ML', 'mech': 'Mech', 'nsa': 'NSA', 'sde': 'SDE', 'hr': 'HR',
+                'qa': 'QA', 'r&d': 'R&D', 'cgpa': 'CGPA', 'lpa': 'LPA', 'ctc': 'CTC',
+                'pvt': 'Pvt', 'ltd': 'Ltd', 'llc': 'LLC', 'gd': 'GD', 'pi': 'PI',
+                'adas': 'ADAS', 'get': 'GET', 'ase': 'ASE', 'ui': 'UI', 'ux': 'UX', 'seo': 'SEO',
+                'cppct': 'CPPCT', 'ct': 'CT', 'tmt': 'TMT'
+            };
+
+            return trimmed.replace(/(\([^)]*\))|([^\(\)]+)/g, (match, brackets, text) => {
+                if (brackets) {
+                    return brackets.toUpperCase();
+                }
+                if (text) {
+                    return text.replace(/\b[a-zA-Z.]+\b/g, (word) => {
+                        const lower = word.toLowerCase();
+                        if (ACRONYMS[lower]) {
+                            return ACRONYMS[lower];
+                        }
+                        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                    });
+                }
+            return match;
+            });
+        };
+
+        // Helper: format student names (First letter Caps, remaining small, uppercase initials <= 2 chars)
+        const formatStudentName = (name) => {
+            if (!name || typeof name !== 'string') return name || '';
+            let trimmed = name.trim();
+            if (!trimmed) return '';
+
+            return trimmed.replace(/\b[a-zA-Z]+\b/g, (word) => {
+                if (word.length <= 2) {
+                    return word.toUpperCase();
+                }
+                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+            });
+        };
+
+        // Helper: derive academic year (Aug-Jul) from a date string
         const getAcademicYear = (dateStr) => {
             if (!dateStr) return null;
             const s = dateStr.trim();
-            // Direct academic year format like "2024-25"
+            // Direct academic year format like "2024-25" or "2026-27"
             if (/^\d{4}-\d{2}$/.test(s)) return s;
             // First try standard date parsing to get month and year reliably
             const std = formatStandardDate(s);
@@ -280,8 +374,9 @@
                 const mon = monthMap[m[2].toLowerCase().slice(0, 3)];
                 const year = parseInt(m[3], 10);
                 if (mon !== undefined && year) {
-                    // Jun(5)–Dec = start of academic year; Jan–May = end of previous academic year
-                    if (mon >= 5) return `${year}-${(year + 1).toString().slice(-2)}`;
+                    // Aug(7)–Dec(11) = start of academic year (e.g. Aug 2026 -> 2026-27)
+                    // Jan(0)–Jul(6) = end of academic year (e.g. Jul 2027 -> 2026-27)
+                    if (mon >= 7) return `${year}-${(year + 1).toString().slice(-2)}`;
                     else return `${year - 1}-${year.toString().slice(-2)}`;
                 }
             }
@@ -290,13 +385,13 @@
 
         const parseCompanyVisits = (rows) => rows.filter(r => r.company_name && r.company_name.trim()).map(r => {
             const rawDt = (r.drive_date || "").trim();
-            const stdDt = formatStandardDate(rawDt) || rawDt;
+            const stdDt = formatMonthYearDate(rawDt) || formatStandardDate(rawDt) || rawDt;
             return {
-                co: r.company_name,
+                co: formatTitleCaseWithBrackets(r.company_name),
                 dt: stdDt,
-                pk: r.package_range,
-                ro: r.roles,
-                cat: r.category || "",
+                pk: formatCtc(r.package_range),
+                ro: formatTitleCaseWithBrackets(r.roles),
+                cat: formatTitleCaseWithBrackets(r.category || ""),
                 cl: r.college_code || "all",
                 st: r.status || "",
                 sp: r.students_placed ? parseInt(r.students_placed) : null,
@@ -309,11 +404,11 @@
             const rawDt = (r.drive_date || "").trim();
             const stdDt = formatStandardDate(rawDt) || rawDt;
             return {
-                co: r.company_name,
+                co: formatTitleCaseWithBrackets(r.company_name),
                 dt: stdDt,
                 pk: r.package_range,
-                ro: r.roles,
-                el: r.eligibility,
+                ro: formatTitleCaseWithBrackets(r.roles),
+                el: formatTitleCaseWithBrackets(r.eligibility),
                 cl: r.college_code || "all"
             };
         });
@@ -365,6 +460,26 @@
 
         const parseFacilities = (rows) => rows.map(r => ({ i: r.icon, t: r.title, d: r.description }));
 
+        const formatCtc = (ctcVal) => {
+            if (ctcVal === null || ctcVal === undefined) return '—';
+            let str = String(ctcVal).trim();
+            if (!str || str === '—' || str === '-') return '—';
+
+            // Replace lowercase/mixed-case lpa/lakh/lakhs with uppercase LPA and ensure space before LPA
+            str = str.replace(/(\d+(\.\d+)?)\s*(lpa|lakhs?|lakh)\b/gi, '$1 LPA');
+            str = str.replace(/([0-9.]+)\s*(lpa|lakhs?|lakh)\b/gi, '$1 LPA');
+
+            // Pure number e.g. "3.2", "3.7", "2.2", "3", "4.5" -> "3.2 LPA"
+            if (/^\d+(\.\d+)?$/.test(str)) return `${str} LPA`;
+            // Pure range e.g. "3-4", "3.5-5", "4 to 6" -> "3-4 LPA"
+            if (/^\d+(\.\d+)?\s*[\-\–\to]+\s*\d+(\.\d+)?$/i.test(str)) return `${str} LPA`;
+
+            // Normalize any remaining lpa/Lpa variations
+            str = str.replace(/\b(lpa|lakhs?|lakh)\b/gi, 'LPA');
+            str = str.replace(/(\d)\s*(LPA)/g, '$1 LPA');
+            return str;
+        };
+
         const parsePlacedStudents = (rows) => rows.map(r => {
             let photoUrl = r.photo ? r.photo.trim() : "";
             const driveMatch = photoUrl.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
@@ -377,8 +492,8 @@
                 } catch (e) { }
             }
             return {
-                n: r.student_name, photo: photoUrl, co: r.company, r: r.role, c: r.college_short,
-                dept: r.department, ctc: r.ctc, li: r.linkedin, gh: r.github, lc: r.leetcode,
+                n: formatStudentName(r.student_name), photo: photoUrl, co: formatTitleCaseWithBrackets(r.company), r: formatTitleCaseWithBrackets(r.role), c: (r.college_short || "").toUpperCase(),
+                dept: r.department, ctc: formatCtc(r.ctc), li: r.linkedin, gh: r.github, lc: r.leetcode,
                 yop: r.yop
             };
         });
@@ -585,6 +700,19 @@
 
         const App = () => {
             const getInitialPage = () => {
+                const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0].split('/')[0];
+                if (hash) {
+                    if (hash === 'internship' || hash === 'internships') return 'internships';
+                    if (hash === 'jobs' || hash === 'job') return 'jobs';
+                    if (hash === 'dashboard') return 'dashboard';
+                    if (hash === 'colleges') return 'colleges';
+                    if (hash === 'drives') return 'drives';
+                    if (hash === 'salary') return 'salary';
+                    if (hash === 'students') return 'students';
+                    if (hash === 'training') return 'training';
+                    if (hash === 'upcoming') return 'upcoming';
+                    if (hash === 'facilities') return 'facilities';
+                }
                 const path = window.location.pathname.replace(/\/$/, '').split('/').pop();
                 if (path === 'internship' || path === 'internships') return 'internships';
                 if (path === 'jobs' || path === 'job') return 'jobs';
@@ -602,15 +730,26 @@
 
             const setPg = (newPg) => {
                 _setPg(newPg);
-                let path = newPg === 'home' ? '/' : `/${newPg}`;
-                if (newPg === 'internships') path = '/internship';
-                window.history.pushState(null, '', path);
+                let targetHash = newPg === 'home' ? '' : `#${newPg}`;
+                if (newPg === 'internships') targetHash = '#internship';
+                window.history.pushState(null, '', '/' + targetHash);
             };
 
             useEffect(() => {
+                const initialPg = getInitialPage();
+                const pathName = window.location.pathname.replace(/\/$/, '').split('/').pop();
+                if (pathName && pathName !== 'index.html') {
+                    const targetHash = initialPg === 'home' ? '' : `#${initialPg}`;
+                    window.history.replaceState(null, '', '/' + targetHash);
+                }
+
                 const handlePopState = () => _setPg(getInitialPage());
                 window.addEventListener('popstate', handlePopState);
-                return () => window.removeEventListener('popstate', handlePopState);
+                window.addEventListener('hashchange', handlePopState);
+                return () => {
+                    window.removeEventListener('popstate', handlePopState);
+                    window.removeEventListener('hashchange', handlePopState);
+                };
             }, []);
 
             const [col, setCol] = useState("all");
@@ -626,7 +765,7 @@
             const [selectedJob, setSelectedJob] = useState(null);
 
             const getBestYear = useCallback((id) => {
-                // Return 2026-27 as the default best year for all colleges for the current cycle
+                // Return 2026-27 as the default year for inside placement portal
                 return '2026-27';
             }, []);
 
@@ -859,10 +998,18 @@
                 const ks = Object.keys(yearlyStats).filter(k => k.toLowerCase() !== 'all' && k.toLowerCase() !== 'overall');
                 let tp = 0, tr = 0, to = 0, te = 0, maxH = 0;
                 let avL = [], mvL = [];
-                const targetYear = "2026-27";
+                const targetYear = yr;
 
                 ks.forEach(k => {
-                    // Try to get data for 2026-27 first, then fall back to latest available if not found
+                    // Calculate overall max package across all available years
+                    YEARS.forEach(y => {
+                        const sWin = yearlyStats[k]?.[y];
+                        if (sWin && sWin.h) {
+                            const hVal = parseFloat(String(sWin.h).replace(/[^0-9.]/g, "")) || 0;
+                            if (hVal > maxH) maxH = hVal;
+                        }
+                    });
+
                     let s = yearlyStats[k]?.[targetYear];
                     if (!s || (s.p === 0 && s.r === 0)) {
                         const latestY = YEARS.find(y => yearlyStats[k][y] && (yearlyStats[k][y].p > 0 || yearlyStats[k][y].r > 0));
@@ -871,8 +1018,6 @@
 
                     if (s) {
                         tp += (s.p || 0); tr += (s.r || 0); to += (s.o || 0); te += (s.e || 0);
-                        const h = parseFloat(String(s.h).replace(/[^0-9.]/g, "")) || 0;
-                        if (h > maxH) maxH = h;
                         const a = parseFloat(String(s.a).replace(/[^0-9.]/g, "")) || 0;
                         if (a > 0) avL.push(a);
                         const m = parseFloat(String(s.m).replace(/[^0-9.]/g, "")) || 0;
@@ -881,7 +1026,7 @@
                 });
                 const agA = avL.length ? (avL.reduce((s, v) => s + v, 0) / avL.length).toFixed(1) : "-";
                 const agM = mvL.length ? (mvL.reduce((s, v) => s + v, 0) / mvL.length).toFixed(1) : "-";
-                return { p: tp, o: to, r: tr + "+", h: maxH ? "₹" + maxH + " LPA" : "-", a: agA !== "-" ? "₹" + agA + " LPA" : "-", m: agM !== "-" ? "₹" + agM + " LPA" : "-" };
+                return { p: tp, o: to, r: tr + "+", h: maxH ? "₹" + maxH + " LPA" : "₹53 LPA", a: agA !== "-" ? "₹" + agA + " LPA" : "-", m: agM !== "-" ? "₹" + agM + " LPA" : "-" };
             })();
 
             const fv = companyVisits.filter(v => {
@@ -893,10 +1038,9 @@
                     return catObj.keys.some(k => vCat.includes(k.toLowerCase()));
                 })();
                 const matchDept = dept === "All" || v.dept === dept || v.dept === "Multiple";
-                const matchSearch = search === "" || v.co.toLowerCase().includes(search.toLowerCase());
+                const matchSearch = search === "" || v.co.toLowerCase().includes(search.toLowerCase()) || (v.pk || "").toLowerCase().includes(search.toLowerCase());
                 const vYear = v.ay || getAcademicYear(v.dt);
-                const matchYear = yr === "All" || !vYear || vYear === yr ||
-                    (vYear.includes("-") && (yr.includes(vYear.split("-")[0].slice(-2)) || yr.includes(vYear.split("-")[1].slice(-2))));
+                const matchYear = yr === "All" || !vYear || vYear === yr;
                 return matchCol && matchCat && matchDept && matchSearch && matchYear;
             });
 
@@ -955,7 +1099,9 @@
                     (collegeObj && s.c.toLowerCase() === (collegeObj.short || "").toLowerCase()) ||
                     s.c.toLowerCase() === col;
                 const matchD = dept === "All" || !s.dept || s.dept.toLowerCase() === "multiple" || s.dept.toLowerCase() === dept.toLowerCase();
-                const matchY = yr === "All" || !s.yop || yr.includes(s.yop.toString().slice(-2)) || s.yop.toString() === yr;
+                const targetYop = yr.includes("-") ? yr.split("-")[0] : yr;
+                const studentYop = (s.yop || "").toString();
+                const matchY = yr === "All" || !s.yop || studentYop === targetYop || studentYop.slice(-2) === targetYop.slice(-2);
 
                 const q = (search || "").toLowerCase().trim();
                 const matchS = q === "" ||
@@ -964,6 +1110,7 @@
                     (s.yop || "").toString().toLowerCase().includes(q) ||
                     (s.co || "").toLowerCase().includes(q) ||
                     (s.r || "").toLowerCase().includes(q) ||
+                    (s.ctc || "").toLowerCase().includes(q) ||
                     (s.c || "").toLowerCase().includes(q);
 
                 return matchC && matchD && matchY && matchS;
@@ -1070,14 +1217,14 @@
                                 </div>
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 40 }}>
                                     {colleges.filter(c => c.id !== "snsce").map((c, i) => {
-                                        const displayYear = getBestYear(c.id);
+                                        const displayYear = "2025-26";
                                         const s = yearlyStats[c.id]?.[displayYear] || { h: "-", p: 0, e: 1, status: (displayYear === "2026-27" ? "updating" : "final") };
                                         const isUpd = (s.status === "updating") || (!s.status && displayYear === "2026-27");
                                         const hStr = s.h ? String(s.h) : "-";
                                         const highestVal = hStr.replace(/[^0-9.]/g, '');
                                         const highestUnit = hStr.replace(/[0-9.]/g, '').trim() || "";
                                         return (
-                                            <div key={i} className="glass hlift coll-card" style={{ borderRadius: 14, padding: 20, cursor: "pointer", position: "relative", overflow: "hidden", border: `1px solid rgba(255,255,255,.05)` }} onClick={() => { setCol(c.id); setYr(displayYear); setPg("dashboard") }}>
+                                            <div key={i} className="glass hlift coll-card" style={{ borderRadius: 14, padding: 20, cursor: "pointer", position: "relative", overflow: "hidden", border: `1px solid rgba(255,255,255,.05)` }} onClick={() => { setCol(c.id); setYr("2026-27"); setPg("dashboard") }}>
                                                 <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 3, background: c.color }} />
                                                 <div style={{ position: "absolute", inset: 0, background: `radial-gradient(120px circle at top right, ${c.color}20, transparent)`, pointerEvents: "none" }} />
                                                 <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Code: {c.code}</div>
@@ -1413,14 +1560,15 @@
                                     <div style={{ flex: 1, overflow: "auto" }}>
                                         <table className="tbl">
                                             <thead>
-                                                <tr><th>Company</th><th>Date</th><th>Roles</th><th>Category</th><th>College</th><th>Dept</th><th>Status</th><th>Placed</th></tr>
+                                                <tr><th>Company</th><th>Date</th><th>Package</th><th>Roles</th><th>Category</th><th>College</th><th>Dept</th><th>Status</th><th>Placed</th></tr>
                                             </thead>
                                             <tbody>
                                                 {fv.slice((vPage - 1) * 50, vPage * 50).map((v, i) => (
                                                     <tr key={i}>
                                                         <td style={{ fontWeight: 600 }}>{v.co}</td>
-                                                        <td style={{ fontSize: 12, color: "#888" }}>{formatStandardDate(v.dt) || v.dt}</td>
-                                                        <td style={{ fontSize: 12, color: "#666" }}>{v.ro}</td>
+                                                        <td style={{ fontSize: 12, color: "#888" }}>{formatMonthYearDate(v.dt) || v.dt}</td>
+                                                        <td style={{ fontWeight: 600, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{v.pk ? formatCtc(v.pk) : "—"}</td>
+                                                        <td style={{ fontSize: 12, color: "#666" }}>{formatTitleCaseWithBrackets(v.ro)}</td>
                                                         <td><Badge bg={(v.cat || "").includes("IT Prod") ? "#E3F2FD" : (v.cat || "").includes("Core") ? "#FFF3E0" : (v.cat || "").includes("Sales") ? "#F3E5F5" : "#E8F5E9"} fg={(v.cat || "").includes("IT Prod") ? "#1565C0" : (v.cat || "").includes("Core") ? "#E65100" : (v.cat || "").includes("Sales") ? "#7B1FA2" : "#2E7D32"}>{v.cat || "Other"}</Badge></td>
                                                         <td style={{ fontSize: 12 }}>{v.cl === "all" ? "All" : (colleges.find(c => c.id === v.cl)?.short || (v.cl || "").toUpperCase())}</td>
                                                         <td style={{ fontSize: 12, color: "#888" }}>{v.dept}</td>
@@ -1511,17 +1659,18 @@
                                 </div>
                                 <div className="card" style={{ overflow: "auto" }}>
                                     <table className="tbl">
-                                        <thead><tr><th></th><th>Name</th><th>Dept</th><th>College</th><th>YOP</th><th>Company</th><th>Role</th><th>Profiles</th></tr></thead>
+                                        <thead><tr><th></th><th>Name</th><th>Dept</th><th>College</th><th>YOP</th><th>Company</th><th>Role</th><th>Package</th><th>Profiles</th></tr></thead>
                                         <tbody>
                                             {placed.slice(Math.max(0, (sPage - 1) * 50), sPage * 50).map((s, i) => (
                                                 <tr key={`${s.n || ""}-${i}`}>
                                                     <td><div style={{ width: 30, height: 30, borderRadius: "50%", background: "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, overflow: "hidden" }}>{s && s.photo && typeof s.photo === 'string' && s.photo.trim().startsWith("http") ? <img src={s.photo} alt={s.n || "Student"} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerText = '👤'; }} /> : "👤"}</div></td>
-                                                    <td style={{ fontWeight: 600 }}>{s && s.n ? s.n : "—"}</td>
+                                                    <td style={{ fontWeight: 600 }}>{s && s.n ? formatStudentName(s.n) : "—"}</td>
                                                     <td style={{ fontSize: 12 }}>{s && s.dept ? s.dept : "—"}</td>
-                                                    <td style={{ fontSize: 12 }}>{s && s.c ? s.c : "—"}</td>
+                                                    <td style={{ fontSize: 12, fontWeight: 600 }}>{s && s.c ? String(s.c).toUpperCase() : "—"}</td>
                                                     <td style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>{s && s.yop ? s.yop : "—"}</td>
                                                     <td style={{ fontWeight: 600 }}>{s && s.co ? s.co : "—"}</td>
                                                     <td style={{ fontSize: 12, color: "#666" }}>{s && s.r ? s.r : "—"}</td>
+                                                    <td style={{ fontWeight: 600, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{s && s.ctc ? s.ctc : "—"}</td>
                                                     <td style={{ fontSize: 11, display: "flex", gap: 10, alignItems: "center" }}>
                                                         {s.li && typeof s.li === 'string' && s.li.trim() !== "" ? <a href={s.li} target="_blank" style={{ color: "#0A66C2", cursor: "pointer", textDecoration: "none", fontSize: 16 }} title="LinkedIn"><i className="fab fa-linkedin"></i></a> : <span style={{ color: "#ccc", fontSize: 16 }}><i className="fab fa-linkedin"></i></span>}
                                                         {s.gh && typeof s.gh === 'string' && s.gh.trim() !== "" ? <a href={s.gh} target="_blank" style={{ color: "#333", cursor: "pointer", textDecoration: "none", fontSize: 16 }} title="GitHub"><i className="fab fa-github"></i></a> : <span style={{ color: "#ccc", fontSize: 16 }}><i className="fab fa-github"></i></span>}
@@ -1565,7 +1714,7 @@
 
                             {pg === "training" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Training Programs</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginBottom: 28 }}>{Object.values(trainingData).map((t, i) => (<div key={i} className="card" style={{ padding: 24 }}><h3 style={{ fontSize: 15, fontWeight: 700, color: R, marginBottom: 4 }}>{t.t}</h3><div style={{ fontSize: 11, color: "#999", fontWeight: 600, marginBottom: 8 }}>Partner: {t.p}</div><p style={{ fontSize: 12, color: "#666", lineHeight: 1.6, marginBottom: 12 }}>{t.d}</p><div style={{ display: "flex", flexDirection: "column", gap: 5 }}>{t.m.map((m, j) => <div key={j} style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ width: 4, height: 4, borderRadius: "50%", background: R, flexShrink: 0 }} /><span style={{ fontSize: 12, color: "#555" }}>{m}</span></div>)}</div></div>))}</div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Training Platforms</h3><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10, marginBottom: 28 }}>{platformData.map((p, i) => <div key={i} className="card" style={{ padding: 14 }}><div style={{ fontSize: 13, fontWeight: 700 }}>{p.n}</div><div style={{ fontSize: 11, color: "#888" }}>{p.u}</div></div>)}</div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Global Certifications — {[...certData.it, ...certData.core].reduce((s, c) => s + c.c, 0).toLocaleString()}+</h3><div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}><div className="card" style={{ padding: 20, flex: "1 1 340px" }}><h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>IT Certifications</h4>{certData.it.map((c, i) => <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #f5f5f5" }}><span style={{ fontSize: 12 }}>{c.n}</span><span style={{ fontSize: 13, fontWeight: 800, color: c.cl, fontFamily: "'Space Mono',monospace" }}>{c.c.toLocaleString()}</span></div>)}</div><div className="card" style={{ padding: 20, flex: "1 1 240px" }}><h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Core Certifications</h4>{certData.core.map((c, i) => <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #f5f5f5" }}><span style={{ fontSize: 12 }}>{c.n}</span><span style={{ fontSize: 13, fontWeight: 800, color: c.cl, fontFamily: "'Space Mono',monospace" }}>{c.c}</span></div>)}</div></div></div>)}
 
-                            {pg === "upcoming" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Upcoming Drives & Certifications</h2><p style={{ fontSize: 13, color: "#999", marginBottom: 24 }}>Track drives and certification availability for YOP 2026.</p><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>📅 Upcoming Drives</h3><div className="card" style={{ overflow: "auto", marginBottom: 28 }}><table className="tbl"><thead><tr><th>Company</th><th>Date</th><th>Package</th><th>Roles</th><th>Eligibility</th><th>College</th></tr></thead><tbody>{upcoming.filter(d => col === "all" || d.cl === col).map((d, i) => (<tr key={i}><td style={{ fontWeight: 700 }}>{d.co}</td><td><Badge bg="#FFF3E0" fg="#E65100">{formatStandardDate(d.dt) || d.dt}</Badge></td><td style={{ fontWeight: 600, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{d.pk}</td><td style={{ fontSize: 12, color: "#666" }}>{d.ro}</td><td style={{ fontSize: 11, color: "#888" }}>{d.el}</td><td style={{ fontSize: 12 }}>{colleges.find(c => c.id === d.cl)?.short || d.cl}</td></tr>))}</tbody></table></div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>🏅 Certified Talent Pool for Recruiters</h3><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>{(() => { const deptMap = { "Microsoft": "CSE, IT", "Databricks": "AI&DS, CSE", "AWS": "CSE, IT, ECE", "Snowflake": "CSE, IT", "Salesforce": "CSE, MBA", "NVIDIA": "AI&ML", "Oracle": "CSE, IT", "Google": "All Depts", "ServiceNow": "CSE, IT", "CATIA": "Mech, Aero", "FOSTAC": "Food Tech", "HACCP": "Food Tech", "BIM": "Civil", "CAD Design": "Mech, Civil" }; return [...certData.it, ...certData.core].map((c, i) => (<div key={i} className="card" style={{ padding: 14 }}><div style={{ fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{c.n}</div><div style={{ fontSize: 20, fontWeight: 800, color: c.cl || R, fontFamily: "'Space Mono',monospace" }}>{c.c.toLocaleString()}</div><div style={{ fontSize: 10, color: "#999" }}>Depts: {deptMap[c.n] || "All Depts"}</div><Badge bg="#E8F5E9" fg="#2E7D32">Available</Badge></div>)); })()}</div></div>)}
+                            {pg === "upcoming" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Upcoming Drives & Certifications</h2><p style={{ fontSize: 13, color: "#999", marginBottom: 24 }}>Track drives and certification availability for YOP 2026.</p><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>📅 Upcoming Drives</h3><div className="card" style={{ overflow: "auto", marginBottom: 28 }}><table className="tbl"><thead><tr><th>Company</th><th>Date</th><th>Package</th><th>Roles</th><th>Eligibility</th><th>College</th></tr></thead><tbody>{upcoming.filter(d => col === "all" || d.cl === col).map((d, i) => (<tr key={i}><td style={{ fontWeight: 700 }}>{formatTitleCaseWithBrackets(d.co)}</td><td><Badge bg="#FFF3E0" fg="#E65100">{formatStandardDate(d.dt) || d.dt}</Badge></td><td style={{ fontWeight: 600, color: R, fontFamily: "'Space Mono',monospace", fontSize: 12 }}>{d.pk}</td><td style={{ fontSize: 12, color: "#666" }}>{formatTitleCaseWithBrackets(d.ro)}</td><td style={{ fontSize: 11, color: "#888" }}>{formatTitleCaseWithBrackets(d.el)}</td><td style={{ fontSize: 12 }}>{colleges.find(c => c.id === d.cl)?.short || d.cl}</td></tr>))}</tbody></table></div><h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>🏅 Certified Talent Pool for Recruiters</h3><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>{(() => { const deptMap = { "Microsoft": "CSE, IT", "Databricks": "AI&DS, CSE", "AWS": "CSE, IT, ECE", "Snowflake": "CSE, IT", "Salesforce": "CSE, MBA", "NVIDIA": "AI&ML", "Oracle": "CSE, IT", "Google": "All Depts", "ServiceNow": "CSE, IT", "CATIA": "Mech, Aero", "FOSTAC": "Food Tech", "HACCP": "Food Tech", "BIM": "Civil", "CAD Design": "Mech, Civil" }; return [...certData.it, ...certData.core].map((c, i) => (<div key={i} className="card" style={{ padding: 14 }}><div style={{ fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{c.n}</div><div style={{ fontSize: 20, fontWeight: 800, color: c.cl || R, fontFamily: "'Space Mono',monospace" }}>{c.c.toLocaleString()}</div><div style={{ fontSize: 10, color: "#999" }}>Depts: {deptMap[c.n] || "All Depts"}</div><Badge bg="#E8F5E9" fg="#2E7D32">Available</Badge></div>)); })()}</div></div>)}
 
                             {pg === "facilities" && (<div><h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Campus Placement Facilities</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>{facilityData.map((f, i) => <div key={i} className="card" style={{ padding: 18, display: "flex", gap: 12, alignItems: "flex-start" }}><div style={{ fontSize: 26, flexShrink: 0 }}>{f.i}</div><div><div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{f.t}</div><div style={{ fontSize: 12, color: "#888" }}>{f.d}</div></div></div>)}</div><div className="card" style={{ padding: 24, marginTop: 20, borderLeft: `4px solid ${R}` }}><h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>IIPC Mission</h3><p style={{ fontSize: 13, color: "#666", lineHeight: 1.7 }}>The Industry Institute Partnership Cell synergizes academic activities with industry needs through strategic planning. SNSCT IIPC functions with excellent rapport with industries in and around Coimbatore — offering technical consultancy, latest engineering courses, sponsored R&D, seminars, workshops, and industrial training programmes.</p></div></div>)}
 

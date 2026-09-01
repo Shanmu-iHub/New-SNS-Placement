@@ -49,14 +49,14 @@ Currently, the entire application logic, styling, and data-fetching layer are en
 
 Because this project utilizes Babel to compile JSX in the browser, opening the file directly via the `file://` protocol may cause CORS issues depending on your browser.
 
-To test locally, it is highly recommended to serve the directory using a simple local HTTP server:
+To test locally, serve the directory using the included SPA server script (or `npx serve -s`):
 
 ```bash
-# Using Python 3
-python3 -m http.server 8000
+# Recommended for local SPA testing (prevents 404 on page refresh)
+python3 server.py 8000
 
-# Using Node.js (http-server)
-npx http-server
+# Or using Node.js serve
+npx serve -s .
 ```
 Then navigate to `http://localhost:8000` in your browser.
 
