@@ -483,23 +483,109 @@
             };
         });
 
+        const parseCount = (v) => {
+            const n = parseInt(String(v ?? '').replace(/,/g, '').trim(), 10);
+            return isNaN(n) ? 0 : n;
+        };
+
+        const parseLpaValue = (val) => {
+            if (val === null || val === undefined) return 0;
+            const n = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+            return isNaN(n) ? 0 : n;
+        };
+
+        const SALARY_COLLEGE_FIELDS = ['snsct', 'snsce', 'drsnsrcas', 'snscnursing', 'snscahs', 'snscphs', 'snscp'];
+        const SNSCE_MERGED_YEARS = ['2025-26', '2026-27'];
+
+        const parseBandBounds = (range) => {
+            const cleaned = String(range || '').replace(/₹/g, '').replace(/,/g, '').trim();
+            const plus = cleaned.match(/([\d.]+)\s*L?\s*\+/i);
+            if (plus) return { min: parseFloat(plus[1]), max: Infinity };
+            const rng = cleaned.match(/([\d.]+)\s*[-–to]+\s*([\d.]+)/i);
+            if (rng) return { min: parseFloat(rng[1]), max: parseFloat(rng[2]) };
+            return { min: 0, max: 0 };
+        };
+
+        const findBandIndexForCtc = (bands, lpa) => {
+            if (!lpa || !bands || !bands.length) return -1;
+            let match = -1;
+            bands.forEach((b, i) => {
+                const { min, max } = parseBandBounds(b.range);
+                const inRange = max === Infinity ? lpa >= min : (lpa >= min && lpa < max);
+                if (inRange) match = i;
+            });
+            if (match >= 0) return match;
+            let lowI = 0, lowMin = Infinity, highI = 0, highMin = -Infinity;
+            bands.forEach((b, i) => {
+                const { min } = parseBandBounds(b.range);
+                if (min < lowMin) { lowMin = min; lowI = i; }
+                if (min > highMin) { highMin = min; highI = i; }
+            });
+            return lpa < lowMin ? lowI : highI;
+        };
+
+        // Align salary bars with Placement_Stats so Highest CTC sits in the right band
+        // and leftover placed students are not dropped from the chart.
+        const reconcileSalaryBands = (bands, statsMap, year) => {
+            if (!bands || !bands.length) return bands || [];
+            const cloned = bands.map(b => ({ ...b }));
+            const skipSnsce = SNSCE_MERGED_YEARS.includes(year);
+            const bump = (idx, field, delta) => {
+                cloned[idx][field] = Math.max(0, (cloned[idx][field] || 0) + delta);
+            };
+            const fieldSum = (field) => cloned.reduce((s, b) => s + (b[field] || 0), 0);
+
+            SALARY_COLLEGE_FIELDS.forEach(field => {
+                if (skipSnsce && field === 'snsce') return;
+                const stats = statsMap[field]?.[year];
+                if (!stats) return;
+                const placed = stats.p || 0;
+                if (placed <= 0) return;
+                const highest = parseLpaValue(stats.h);
+                const typical = parseLpaValue(stats.m) || parseLpaValue(stats.a) || highest;
+
+                if (highest > 0) {
+                    const hi = findBandIndexForCtc(cloned, highest);
+                    if (hi >= 0 && (cloned[hi][field] || 0) === 0) {
+                        bump(hi, field, 1);
+                        if (fieldSum(field) > placed) {
+                            let maxI = -1, maxV = 0;
+                            cloned.forEach((b, i) => {
+                                if (i === hi) return;
+                                if ((b[field] || 0) > maxV) { maxV = b[field]; maxI = i; }
+                            });
+                            if (maxI >= 0) bump(maxI, field, -1);
+                        }
+                    }
+                }
+
+                const counted = fieldSum(field);
+                if (placed > counted) {
+                    let idx = findBandIndexForCtc(cloned, typical);
+                    if (idx < 0) idx = cloned.length - 1;
+                    bump(idx, field, placed - counted);
+                }
+            });
+            return cloned;
+        };
+
         const parseSalaryBands = (rows) => {
             // Group by academic_year; if no academic_year column, treat all rows as a 'all' fallback
             const grouped = {};
             rows.forEach(r => {
-                const rawAY = (r.academic_year || '').trim();
+                const rawAY = (r.academic_year || r['Academic Year'] || r.year || '').trim();
                 const ay = normalizeAY(rawAY) || 'all';
                 if (!grouped[ay]) grouped[ay] = [];
-                const phsVal = parseInt(r.snscphs) || parseInt(r.snscphysio) || 0;
+                const phsVal = parseCount(r.snscphs) || parseCount(r.snscphysio);
                 grouped[ay].push({
-                    range: r.salary_band,
-                    snsct: parseInt(r.snsct_count) || 0,
-                    snsce: parseInt(r.snsce_count) || 0,
-                    drsnsrcas: parseInt(r.drsnsrcas_count) || 0,
-                    snscnursing: parseInt(r.snscnursing) || 0,
-                    snscahs: parseInt(r.snscahs) || 0,
+                    range: r.salary_band || r.band || r.range,
+                    snsct: parseCount(r.snsct_count) || parseCount(r.snsct),
+                    snsce: parseCount(r.snsce_count) || parseCount(r.snsce),
+                    drsnsrcas: parseCount(r.drsnsrcas_count) || parseCount(r.drsnsrcas),
+                    snscnursing: parseCount(r.snscnursing),
+                    snscahs: parseCount(r.snscahs),
                     snscphs: phsVal,
-                    snscp: parseInt(r.snscp) || 0,
+                    snscp: parseCount(r.snscp),
                     c: r.band_color || '#C41230'
                 });
             });
@@ -642,26 +728,26 @@
         const YEARS = ["2026-27", "2025-26", "2024-25", "2023-24", "2022-23", "2021-22", "2020-21"];
 
         const YS = {
-            snsct: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 1025, r: 0, o: 0, status: "updating" }, "2025-26": { h: "53 LPA", a: "4.8 LPA", m: "4 LPA", p: 984, e: 1025, r: 150, o: 1100, status: "final" }, "2024-25": { h: "21 LPA", a: "4.5 LPA", m: "3.6 LPA", p: 1645, e: 1713, r: 454, o: 2100, status: "final" }, "2023-24": { h: "19 LPA", a: "4.2 LPA", m: "3.5 LPA", p: 1008, e: 1080, r: 244, o: 1300, status: "final" }, "2022-23": { h: "13.5 LPA", a: "4 LPA", m: "3.2 LPA", p: 900, e: 1000, r: 200, o: 1100, status: "final" }, "2021-22": { h: "12 LPA", a: "3.8 LPA", m: "3 LPA", p: 820, e: 950, r: 180, o: 950, status: "final" }, "2020-21": { h: "10 LPA", a: "3.5 LPA", m: "2.8 LPA", p: 750, e: 900, r: 160, o: 850, status: "final" } },
+            snsct: { "2026-27": { h: "6 LPA", a: "4.65 LPA", m: "4 LPA", p: 158, e: 1704, r: 62, o: 158, status: "updating" }, "2025-26": { h: "53 LPA", a: "4.8 LPA", m: "4 LPA", p: 984, e: 1025, r: 150, o: 1100, status: "final" }, "2024-25": { h: "21 LPA", a: "4.5 LPA", m: "3.6 LPA", p: 1645, e: 1713, r: 454, o: 2100, status: "final" }, "2023-24": { h: "19 LPA", a: "4.2 LPA", m: "3.5 LPA", p: 1008, e: 1080, r: 244, o: 1300, status: "final" }, "2022-23": { h: "13.5 LPA", a: "4 LPA", m: "3.2 LPA", p: 900, e: 1000, r: 200, o: 1100, status: "final" }, "2021-22": { h: "12 LPA", a: "3.8 LPA", m: "3 LPA", p: 820, e: 950, r: 180, o: 950, status: "final" }, "2020-21": { h: "10 LPA", a: "3.5 LPA", m: "2.8 LPA", p: 750, e: 900, r: 160, o: 850, status: "final" } },
             snsce: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 656, r: 0, o: 0, status: "updating" }, "2025-26": { h: "24 LPA", a: "4.34 LPA", m: "4 LPA", p: 612, e: 656, r: 240, o: 646, status: "final" }, "2024-25": { h: "21 LPA", a: "5 LPA", m: "7.8 LPA", p: 800, e: 900, r: 165, o: 1000, status: "final" }, "2023-24": { h: "13.5 LPA", a: "4.5 LPA", m: "4 LPA", p: 650, e: 750, r: 140, o: 800, status: "final" }, "2022-23": { h: "10 LPA", a: "4 LPA", m: "3.5 LPA", p: 550, e: 650, r: 120, o: 680, status: "final" }, "2021-22": { h: "8 LPA", a: "3.6 LPA", m: "3 LPA", p: 480, e: 580, r: 100, o: 560, status: "final" }, "2020-21": { h: "9 LPA", a: "3.4 LPA", m: "4 LPA", p: 400, e: 520, r: 85, o: 470, status: "final" } },
-            drsnsrcas: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 1717, r: 0, o: 0, status: "updating" }, "2025-26": { h: "9 LPA", a: "2.92 LPA", m: "2.28 LPA", p: 1352, e: 1717, r: 116, o: 1769, status: "final" }, "2024-25": { h: "9 LPA", a: "2.51 LPA", m: "2.34 LPA", p: 1334, e: 1584, r: 101, o: 1734, status: "final" }, "2023-24": { h: "6.1 LPA", a: "2.63 LPA", m: "2.50 LPA", p: 1173, e: 1569, r: 81, o: 1220, status: "final" }, "2022-23": { h: "7.25 LPA", a: "2.10 LPA", m: "1.88 LPA", p: 952, e: 1316, r: 53, o: 1103, status: "final" }, "2021-22": { h: "3.50 LPA", a: "2 LPA", m: "1.86 LPA", p: 549, e: 863, r: 51, o: 706, status: "final" }, "2020-21": { h: "5.8 LPA", a: "1.72 LPA", m: "1.8 LPA", p: 669, e: 961, r: 74, o: 919, status: "final" } },
-            snscnursing: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 56, r: 0, o: 0, status: "updating" }, "2025-26": { h: "2.64 LPA", a: "2.38 LPA", m: "2.38 LPA", p: 36, e: 56, r: 4, o: 36, status: "final" }, "2024-25": { h: "2.52 LPA", a: "2.28 LPA", m: "2.28 LPA", p: 30, e: 32, r: 4, o: 30, status: "final" } },
-            snscahs: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 45, r: 0, o: 0, status: "updating" }, "2025-26": { h: "5 LPA", a: "5 LPA", m: "7.8 LPA", p: 40, e: 45, r: 20, o: 100, status: "final" }, "2024-25": { h: "3.6 LPA", a: "1.8 LPA", m: "2.16 LPA", p: 52, e: 68, r: 22, o: 0, status: "final" }, "2023-24": { h: "2.4 LPA", a: "1.5 LPA", m: "1.8 LPA", p: 26, e: 31, r: 13, o: 0, status: "final" } },
-            snscphs: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 27, r: 0, o: 0, status: "updating" }, "2024-25": { h: "3.5 LPA", a: "2.5 LPA", m: "2.4 LPA", p: 27, e: 27, r: 7, o: 35, status: "final" } },
-            snscp: { "2026-27": { h: "-", a: "-", m: "-", p: 0, e: 73, r: 0, o: 0, status: "updating" }, "2025-26": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129, status: "final" }, "2024-25": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129, status: "final" }, "2023-24": { h: "7.5 LPA", a: "4.05 LPA", m: "3.375 LPA", p: 53, e: 53, r: 21, o: 84, status: "final" }, "2022-23": { h: "6.5 LPA", a: "4.01 LPA", m: "3.75 LPA", p: 65, e: 68, r: 21, o: 90, status: "final" } },
+            drsnsrcas: { "2026-27": { h: "8 LPA", a: "2.9 LPA", m: "2.5 LPA", p: 70, e: 1400, r: 25, o: 50, status: "updating" }, "2025-26": { h: "9 LPA", a: "2.92 LPA", m: "2.28 LPA", p: 1352, e: 1717, r: 116, o: 1769, status: "final" }, "2024-25": { h: "9 LPA", a: "2.51 LPA", m: "2.34 LPA", p: 1334, e: 1584, r: 101, o: 1734, status: "final" }, "2023-24": { h: "6.1 LPA", a: "2.63 LPA", m: "2.50 LPA", p: 1173, e: 1569, r: 81, o: 1220, status: "final" }, "2022-23": { h: "7.25 LPA", a: "2.10 LPA", m: "1.88 LPA", p: 952, e: 1316, r: 53, o: 1103, status: "final" }, "2021-22": { h: "3.50 LPA", a: "2 LPA", m: "1.86 LPA", p: 549, e: 863, r: 51, o: 706, status: "final" }, "2020-21": { h: "5.8 LPA", a: "1.72 LPA", m: "1.8 LPA", p: 669, e: 961, r: 74, o: 919, status: "final" } },
+            snscnursing: { "2026-27": { h: "2.64 LPA", a: "2.38 LPA", m: "2.38 LPA", p: 36, e: 56, r: 4, o: 36, status: "updating" }, "2025-26": { h: "2.64 LPA", a: "2.38 LPA", m: "2.38 LPA", p: 36, e: 56, r: 4, o: 36, status: "final" }, "2024-25": { h: "2.52 LPA", a: "2.28 LPA", m: "2.28 LPA", p: 30, e: 32, r: 4, o: 30, status: "final" } },
+            snscahs: { "2026-27": { h: "3.96 LPA", a: "2 LPA", m: "2.2 LPA", p: 31, e: 60, r: 20, o: 25, status: "updating" }, "2025-26": { h: "5 LPA", a: "5 LPA", m: "7.8 LPA", p: 40, e: 45, r: 20, o: 100, status: "final" }, "2024-25": { h: "3.6 LPA", a: "1.8 LPA", m: "2.16 LPA", p: 52, e: 68, r: 22, o: 0, status: "final" }, "2023-24": { h: "2.4 LPA", a: "1.5 LPA", m: "1.8 LPA", p: 26, e: 31, r: 13, o: 0, status: "final" } },
+            snscphs: { "2026-27": { h: "3.5 LPA", a: "3.0 LPA", m: "2.5 LPA", p: 12, e: 12, r: 12, o: 15, status: "updating" }, "2025-26": { h: "3.5 LPA", a: "2.5 LPA", m: "2.4 LPA", p: 27, e: 27, r: 7, o: 35, status: "final" }, "2024-25": { h: "3.5 LPA", a: "2.5 LPA", m: "2.4 LPA", p: 27, e: 27, r: 7, o: 35, status: "final" } },
+            snscp: { "2026-27": { h: "3.5 LPA", a: "4 LPA", m: "2.5 LPA", p: 68, e: 73, r: 7, o: 129, status: "updating" }, "2025-26": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129, status: "final" }, "2024-25": { h: "3.75 LPA", a: "4 LPA", m: "2.775 LPA", p: 68, e: 73, r: 7, o: 129, status: "final" }, "2023-24": { h: "7.5 LPA", a: "4.05 LPA", m: "3.375 LPA", p: 53, e: 53, r: 21, o: 84, status: "final" }, "2022-23": { h: "6.5 LPA", a: "4.01 LPA", m: "3.75 LPA", p: 65, e: 68, r: 21, o: 90, status: "final" } },
         };
 
 
 
         const SB = {
             "2026-27": [
-                { range: "₹20L+", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#C41230" },
-                { range: "₹15-20L", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#E63946" },
-                { range: "₹10-15L", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#F4845F" },
-                { range: "₹7-10L", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#F7B267" },
-                { range: "₹5-7L", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#7FB069" },
-                { range: "₹3-5L", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#4ECDC4" },
-                { range: "₹2-3L", snsct: 0, snsce: 0, drsnsrcas: 0, c: "#45B7D1" },
+                { range: "₹20L+", snsct: 0, snsce: 0, drsnsrcas: 0, snscnursing: 0, snscahs: 0, snscphs: 0, snscp: 0, c: "#C41230" },
+                { range: "₹15-20L", snsct: 0, snsce: 0, drsnsrcas: 0, snscnursing: 0, snscahs: 0, snscphs: 0, snscp: 0, c: "#E63946" },
+                { range: "₹10-15L", snsct: 0, snsce: 0, drsnsrcas: 0, snscnursing: 0, snscahs: 0, snscphs: 0, snscp: 0, c: "#F4845F" },
+                { range: "₹7-10L", snsct: 0, snsce: 0, drsnsrcas: 0, snscnursing: 0, snscahs: 0, snscphs: 0, snscp: 0, c: "#F7B267" },
+                { range: "₹5-7L", snsct: 0, snsce: 0, drsnsrcas: 0, snscnursing: 0, snscahs: 0, snscphs: 0, snscp: 0, c: "#7FB069" },
+                { range: "₹3-5L", snsct: 158, snsce: 0, drsnsrcas: 30, snscnursing: 0, snscahs: 0, snscphs: 0, snscp: 0, c: "#4ECDC4" },
+                { range: "₹2-3L", snsct: 0, snsce: 0, drsnsrcas: 0, snscnursing: 0, snscahs: 0, snscphs: 0, snscp: 0, c: "#45B7D1" },
             ],
             "2025-26": [
                 { range: "₹20L+", snsct: 3, snsce: 0, drsnsrcas: 0, c: "#C41230" },
@@ -1019,6 +1105,7 @@
                     let avL = [], mvL = [];
                     let hasUpdating = false;
                     ks.forEach(k => {
+                        if (SNSCE_MERGED_YEARS.includes(y) && k === 'snsce') return;
                         const s = yearlyStats[k]?.[y];
                         if (s) {
                             tp += (s.p || 0); te += (s.e || 0); tr += (s.r || 0); to += (s.o || 0);
@@ -1120,14 +1207,27 @@
 
             // Compute salary bands for the currently selected salary year
             const availableSalaryYears = YEARS || [];
+            const hideSnsceInSalary = SNSCE_MERGED_YEARS.includes(salaryYr);
 
-            const salaryBands = (() => {
+            const rawSalaryBands = (() => {
                 if (salaryBandsByYear[salaryYr]) return salaryBandsByYear[salaryYr];
                 if (salaryBandsByYear[yr]) return salaryBandsByYear[yr];
                 if (salaryBandsByYear['all']) return salaryBandsByYear['all'];
                 const keys = Object.keys(salaryBandsByYear);
                 return keys.length > 0 ? salaryBandsByYear[keys[0]] : [];
             })();
+            const salaryBands = reconcileSalaryBands(rawSalaryBands, yearlyStats, salaryYr);
+
+            const salaryBandValue = (b) => {
+                if (col !== "all") return (b[colToField[col] || col] || 0);
+                return SALARY_COLLEGE_FIELDS.reduce((s, f) => {
+                    if (hideSnsceInSalary && f === 'snsce') return s;
+                    return s + (b[f] || 0);
+                }, 0);
+            };
+            const salaryStats = sy(salaryYr);
+            const highestCtcLpa = parseLpaValue(salaryStats.h);
+            const highestBandIdx = findBandIndexForCtc(salaryBands, highestCtcLpa);
 
             const navItems = [{ id: "home", icon: "🏠", l: "Home" }, { id: "dashboard", icon: "📊", l: "Dashboard" }, { id: "colleges", icon: "🏫", l: "Colleges & Depts" }, { id: "drives", icon: "🏢", l: "Company Drives" }, { id: "salary", icon: "💰", l: "Salary Analysis" }, { id: "students", icon: "🎓", l: "Placed Students" }, { id: "internships", icon: "💼", l: "Internships" }, { id: "jobs", icon: "🚀", l: "Jobs" }, { id: "training", icon: "📚", l: "Training" }, { id: "upcoming", icon: "📅", l: "Upcoming" }, { id: "facilities", icon: "🏗️", l: "Facilities" }];
             const Badge = ({ children, bg, fg }) => <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 100, fontSize: 10, fontWeight: 600, background: bg, color: fg }}>{children}</span>;
@@ -1530,28 +1630,37 @@
                                     {salaryBands.length === 0
                                         ? <div style={{ color: "#aaa", fontSize: 13, textAlign: "center", padding: 20 }}>No data available for {salaryYr}</div>
                                         : (() => {
-                                            const fieldName = colToField[col] || col;
-                                            const getVal = (b) => {
-                                                if (col !== "all") return (b[fieldName] || 0);
-                                                // Sum all college values for "all"
-                                                return (b.snsct || 0) + (b.snsce || 0) + (b.drsnsrcas || 0) + (b.snscnursing || 0) + (b.snscahs || 0) + (b.snscphs || 0) + (b.snscp || 0);
-                                            };
-                                            const allVals = salaryBands.map(b => getVal(b));
+                                            const allVals = salaryBands.map(b => salaryBandValue(b));
                                             const mx = Math.max(...allVals, 1);
-                                            return salaryBands.map((b, i) => {
-                                                const val = getVal(b);
-                                                return (
-                                                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                                                        <div style={{ width: 70, fontSize: 12, fontWeight: 700, fontFamily: "'Space Mono',monospace", color: "#555", flexShrink: 0 }}>{b.range}</div>
-                                                        <div style={{ flex: 1, height: 24, background: "#f0f0f0", borderRadius: 4, overflow: "hidden" }}>
-                                                            <div className="bar" style={{ width: `${Math.max((val / mx) * 100, val > 0 ? 2 : 0)}%`, background: b.c, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8 }}>
-                                                                <span style={{ fontSize: 10, fontWeight: 700, color: "white" }}>{val}</span>
+                                            const distTotal = allVals.reduce((s, v) => s + v, 0);
+                                            const placedTotal = salaryStats.p || 0;
+                                            return (
+                                                <div>
+                                                    {salaryBands.map((b, i) => {
+                                                        const val = salaryBandValue(b);
+                                                        const isHighest = i === highestBandIdx && highestCtcLpa > 0;
+                                                        return (
+                                                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                                                                <div style={{ width: 78, flexShrink: 0 }}>
+                                                                    <div style={{ fontSize: 12, fontWeight: 700, fontFamily: "'Space Mono',monospace", color: isHighest ? R : "#555" }}>{b.range}</div>
+                                                                    {isHighest && <div style={{ fontSize: 8, fontWeight: 700, color: R, letterSpacing: ".4px", textTransform: "uppercase" }}>Highest CTC</div>}
+                                                                </div>
+                                                                <div style={{ flex: 1, height: 24, background: "#f0f0f0", borderRadius: 4, overflow: "hidden" }}>
+                                                                    <div className="bar" style={{ width: `${Math.max((val / mx) * 100, val > 0 ? 2 : 0)}%`, background: b.c, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8 }}>
+                                                                        <span style={{ fontSize: 10, fontWeight: 700, color: "white" }}>{val}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div style={{ width: 35, fontSize: 11, fontWeight: 600, color: "#888", textAlign: "right", flexShrink: 0 }}>{val}</div>
                                                             </div>
-                                                        </div>
-                                                        <div style={{ width: 35, fontSize: 11, fontWeight: 600, color: "#888", textAlign: "right", flexShrink: 0 }}>{val}</div>
+                                                        );
+                                                    })}
+                                                    <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 12, paddingTop: 10, borderTop: "1px solid #eee", fontSize: 11, color: "#888" }}>
+                                                        <span>Distribution total: <strong style={{ color: "#333" }}>{distTotal.toLocaleString()}</strong></span>
+                                                        <span>Students placed: <strong style={{ color: "#333" }}>{placedTotal.toLocaleString()}{salaryStats.status === "updating" ? "+" : ""}</strong></span>
+                                                        {highestCtcLpa > 0 && <span>Highest CTC: <strong style={{ color: R }}>{salaryStats.h}{salaryStats.status === "updating" ? "+" : ""}</strong></span>}
                                                     </div>
-                                                );
-                                            });
+                                                </div>
+                                            );
                                         })()
                                     }
                                 </div>
@@ -1686,8 +1795,11 @@
                                             </thead>
                                             <tbody>
                                                 {salaryBands.map((b, i) => {
-                                                    const snsctVal = (yr === "2025-26" || yr === "2026-27") ? (b.snsct || 0) + (b.snsce || 0) : (b.snsct || 0);
-                                                    const total = (b.snsct || 0) + (b.snsce || 0) + (b.drsnsrcas || 0) + (b.snscnursing || 0) + (b.snscahs || 0) + (b.snscphs || 0) + (b.snscp || 0);
+                                                    const snsctVal = b.snsct || 0;
+                                                    const total = SALARY_COLLEGE_FIELDS.reduce((s, f) => {
+                                                        if ((yr === "2025-26" || yr === "2026-27") && f === "snsce") return s;
+                                                        return s + (b[f] || 0);
+                                                    }, 0);
                                                     return (
                                                         <tr key={i}>
                                                             <td style={{ fontWeight: 700, fontFamily: "'Space Mono',monospace", color: b.c }}>{b.range}</td>
