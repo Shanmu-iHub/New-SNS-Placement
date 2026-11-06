@@ -925,6 +925,7 @@
             const [selectedInternship, setSelectedInternship] = useState(null);
             const [selectedJob, setSelectedJob] = useState(null);
             const initialCollege = useRef(col);
+            const initialYear = useRef(new URLSearchParams(window.location.search).get("year"));
 
             // Keep the current view shareable as ?college=snsct&year=2024-25.
             useEffect(() => {
@@ -935,11 +936,6 @@
                 else url.searchParams.set("year", yr);
                 window.history.replaceState(null, "", url);
             }, [col, yr]);
-
-            const getBestYear = useCallback((id) => {
-                // Return 2026-27 as the default year for inside placement portal
-                return '2026-27';
-            }, []);
 
             // ═══ Dynamic Data State (initialized with hardcoded defaults) ═══
             const [colleges, setColleges] = useState(COLLEGES);
@@ -971,6 +967,11 @@
 
             // ═══ Sync Status ═══
             const [syncStatus, setSyncStatus] = useState({ loading: false, lastSync: null, error: null, source: 'defaults' });
+
+            const getBestYear = useCallback((id) => {
+                if (id === "all") return "2026-27";
+                return YEARS.find(y => (yearlyStats[id]?.[y]?.p || 0) > 0) || "2026-27";
+            }, [yearlyStats]);
 
             // Fetch all data from Google Sheets
             const loadFromSheets = useCallback(async () => {
@@ -1081,8 +1082,9 @@
             useEffect(() => {
                 setDept("All");
                 setSPage(1);
-                if (initialCollege.current !== col) setYr(getBestYear(col));
+                if (initialCollege.current !== col || !initialYear.current) setYr(getBestYear(col));
                 initialCollege.current = col;
+                initialYear.current = null;
                 // Snap salary year to latest available for this college
                 const firstSalYr = availableSalaryYears[0];
                 if (firstSalYr && (!salaryYr || !availableSalaryYears.includes(salaryYr))) {
