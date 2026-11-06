@@ -887,20 +887,20 @@
 
             const setPg = (newPg) => {
                 _setPg(newPg);
-                let targetHash = newPg === 'home' ? '' : `#${newPg}`;
-                if (newPg === 'internships') targetHash = '#internship';
                 const url = new URL(window.location.href);
-                url.hash = targetHash;
+                url.pathname = newPg === 'home' ? '/' : `/${newPg === 'internships' ? 'internship' : newPg}`;
+                url.hash = '';
                 window.history.pushState(null, '', url);
             };
 
             useEffect(() => {
                 const initialPg = getInitialPage();
-                const pathName = window.location.pathname.replace(/\/$/, '').split('/').pop();
-                if (pathName && pathName !== 'index.html') {
+                const routeName = initialPg === 'home' ? '' : (initialPg === 'internships' ? 'internship' : initialPg);
+                const normalizedPath = routeName ? `/${routeName}` : '/';
+                if (window.location.pathname !== normalizedPath || window.location.hash) {
                     const url = new URL(window.location.href);
-                    url.pathname = '/';
-                    url.hash = initialPg === 'home' ? '' : `#${initialPg}`;
+                    url.pathname = normalizedPath;
+                    url.hash = '';
                     window.history.replaceState(null, '', url);
                 }
 
