@@ -857,6 +857,7 @@
 
         const App = () => {
             const getInitialPage = () => {
+                const params = new URLSearchParams(window.location.search);
                 const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0].split('/')[0];
                 if (hash) {
                     if (hash === 'internship' || hash === 'internships') return 'internships';
@@ -881,6 +882,7 @@
                 if (path === 'training') return 'training';
                 if (path === 'upcoming') return 'upcoming';
                 if (path === 'facilities') return 'facilities';
+                if (params.has('college') || params.has('year')) return 'dashboard';
                 return 'home';
             };
             const [pg, _setPg] = useState(getInitialPage);
@@ -888,14 +890,14 @@
             const setPg = (newPg) => {
                 _setPg(newPg);
                 const url = new URL(window.location.href);
-                url.pathname = newPg === 'home' ? '/' : `/${newPg === 'internships' ? 'internship' : newPg}`;
+                url.pathname = (newPg === 'home' || newPg === 'dashboard') ? '/' : `/${newPg === 'internships' ? 'internship' : newPg}`;
                 url.hash = '';
                 window.history.pushState(null, '', url);
             };
 
             useEffect(() => {
                 const initialPg = getInitialPage();
-                const routeName = initialPg === 'home' ? '' : (initialPg === 'internships' ? 'internship' : initialPg);
+                const routeName = (initialPg === 'home' || initialPg === 'dashboard') ? '' : (initialPg === 'internships' ? 'internship' : initialPg);
                 const normalizedPath = routeName ? `/${routeName}` : '/';
                 if (window.location.pathname !== normalizedPath || window.location.hash) {
                     const url = new URL(window.location.href);
