@@ -33,7 +33,7 @@
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState, useEffect, useCallback } = React;
+        const { useState, useEffect, useCallback, useRef } = React;
 
         const R = "#C41230", D = "#0B0E17", G = "#16213E";
 
@@ -889,15 +889,19 @@
                 _setPg(newPg);
                 let targetHash = newPg === 'home' ? '' : `#${newPg}`;
                 if (newPg === 'internships') targetHash = '#internship';
-                window.history.pushState(null, '', '/' + targetHash);
+                const url = new URL(window.location.href);
+                url.hash = targetHash;
+                window.history.pushState(null, '', url);
             };
 
             useEffect(() => {
                 const initialPg = getInitialPage();
                 const pathName = window.location.pathname.replace(/\/$/, '').split('/').pop();
                 if (pathName && pathName !== 'index.html') {
-                    const targetHash = initialPg === 'home' ? '' : `#${initialPg}`;
-                    window.history.replaceState(null, '', '/' + targetHash);
+                    const url = new URL(window.location.href);
+                    url.pathname = '/';
+                    url.hash = initialPg === 'home' ? '' : `#${initialPg}`;
+                    window.history.replaceState(null, '', url);
                 }
 
                 const handlePopState = () => _setPg(getInitialPage());
@@ -909,8 +913,8 @@
                 };
             }, []);
 
-            const [col, setCol] = useState("all");
-            const [yr, setYr] = useState("2026-27");
+            const [col, setCol] = useState(() => new URLSearchParams(window.location.search).get("college") || "all");
+            const [yr, setYr] = useState(() => new URLSearchParams(window.location.search).get("year") || "2026-27");
             const [dept, setDept] = useState("All");
             const [catF, setCatF] = useState("all");
             const [search, setSearch] = useState("");
@@ -920,6 +924,17 @@
             const [salaryYr, setSalaryYr] = useState("2026-27");
             const [selectedInternship, setSelectedInternship] = useState(null);
             const [selectedJob, setSelectedJob] = useState(null);
+            const initialCollege = useRef(col);
+
+            // Keep the current view shareable as ?college=snsct&year=2024-25.
+            useEffect(() => {
+                const url = new URL(window.location.href);
+                if (col === "all") url.searchParams.delete("college");
+                else url.searchParams.set("college", col);
+                if (yr === "2026-27") url.searchParams.delete("year");
+                else url.searchParams.set("year", yr);
+                window.history.replaceState(null, "", url);
+            }, [col, yr]);
 
             const getBestYear = useCallback((id) => {
                 // Return 2026-27 as the default year for inside placement portal
@@ -1066,7 +1081,8 @@
             useEffect(() => {
                 setDept("All");
                 setSPage(1);
-                setYr(getBestYear(col));
+                if (initialCollege.current !== col) setYr(getBestYear(col));
+                initialCollege.current = col;
                 // Snap salary year to latest available for this college
                 const firstSalYr = availableSalaryYears[0];
                 if (firstSalYr && (!salaryYr || !availableSalaryYears.includes(salaryYr))) {
