@@ -36,54 +36,54 @@
         const { useState, useEffect, useCallback, useRef } = React;
 
         const R = "#C41230", D = "#0B0E17", G = "#16213E";
-// ---------- DEPARTMENT NORMALISATION MAP ----------
-/*
-  The sheet contains many verbose department strings (e.g. "B.Com – CA").
-  The UI dropdown uses short codes like "B.Com", "B.Sc CS", "B.Tech", etc.
-  This map normalises any variant to the short code.
-  Extend it whenever a new variant appears.
-*/
-const DEPT_MAP = {
-  // B.Com variants
-  "B.Com – CA":                "B.Com",
-  "B.Com – DM & DM":           "B.Com",
-  "B.Com – General":           "B.Com",
-  "B.Com – IT":                "B.Com",
-  "B.Com – PA":                "B.Com",
-  "B.Com – Finance":           "B.Com",
-  "B.Com":                     "B.Com",
-  // B.Sc CS variants
-  "B.Sc Computer Science":          "B.Sc CS",
-  "B.Sc CS – AI & Data Science":    "B.Sc CS",
-  "B.Sc CS – Cyber Security":      "B.Sc CS",
-  "B.Sc CS – Data Analytics":      "B.Sc CS",
-  "B.Sc CS – Data Science & Visualization": "B.Sc CS",
-  "B.Sc CS – DevOps & Cloud":      "B.Sc CS",
-  "B.Sc CS – Full Stack Web Development": "B.Sc CS",
-  "B.Sc CS – Data Science":        "B.Sc CS",
-  // B.Sc generic
-  "B.Sc":                     "B.Sc",
-    "BSc fsd": "BSc FSWD",
-  // In case the sheet already uses the corrected name
-  "BSc FSWD": "BSc FSWD",
-  // B.Tech and variants
-  "B.Tech - FT":               "B.Tech",
-  "B.Tech":                    "B.Tech",
-  // BCA
-  "BCA":                       "BCA",
-  // BE variants
-  "BE CSD":                    "BE",
-  "BE - CSD":                  "BE",
-  "BE":                        "BE",
-  // Other degrees you may have
-  "B.Sc Costume Design & Fashion": "B.Sc",
-  "B.Sc Information Technology":  "B.Sc",
-  "B.Sc Psychology":              "B.Sc",
-  "BBA":                          "BBA",
-  "BBA – CA":                     "BBA",
-  "BPT":                          "BPT",
-  // Fallback – keep value as‑is if not listed
-};
+        // ---------- DEPARTMENT NORMALISATION MAP ----------
+        /*
+          The sheet contains many verbose department strings (e.g. "B.Com – CA").
+          The UI dropdown uses short codes like "B.Com", "B.Sc CS", "B.Tech", etc.
+          This map normalises any variant to the short code.
+          Extend it whenever a new variant appears.
+        */
+        const DEPT_MAP = {
+            // B.Com variants
+            "B.Com – CA": "B.Com",
+            "B.Com – DM & DM": "B.Com",
+            "B.Com – General": "B.Com",
+            "B.Com – IT": "B.Com",
+            "B.Com – PA": "B.Com",
+            "B.Com – Finance": "B.Com",
+            "B.Com": "B.Com",
+            // B.Sc CS variants
+            "B.Sc Computer Science": "B.Sc CS",
+            "B.Sc CS – AI & Data Science": "B.Sc CS",
+            "B.Sc CS – Cyber Security": "B.Sc CS",
+            "B.Sc CS – Data Analytics": "B.Sc CS",
+            "B.Sc CS – Data Science & Visualization": "B.Sc CS",
+            "B.Sc CS – DevOps & Cloud": "B.Sc CS",
+            "B.Sc CS – Full Stack Web Development": "B.Sc CS",
+            "B.Sc CS – Data Science": "B.Sc CS",
+            // B.Sc generic
+            "B.Sc": "B.Sc",
+            "BSc fsd": "BSc FSWD",
+            // In case the sheet already uses the corrected name
+            "BSc FSWD": "BSc FSWD",
+            // B.Tech and variants
+            "B.Tech - FT": "B.Tech",
+            "B.Tech": "B.Tech",
+            // BCA
+            "BCA": "BCA",
+            // BE variants
+            "BE CSD": "BE",
+            "BE - CSD": "BE",
+            "BE": "BE",
+            // Other degrees you may have
+            "B.Sc Costume Design & Fashion": "B.Sc",
+            "B.Sc Information Technology": "B.Sc",
+            "B.Sc Psychology": "B.Sc",
+            "BBA": "BBA",
+            "BBA – CA": "BBA",
+            "BPT": "BPT",
+            // Fallback – keep value as‑is if not listed
+        };
 
         // ═══════════════════════════════════════════════════
         // GOOGLE SHEETS API V4 INTEGRATION
@@ -412,7 +412,7 @@ const DEPT_MAP = {
                         return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
                     });
                 }
-            return match;
+                return match;
             });
         };
 
